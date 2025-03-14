@@ -5,11 +5,14 @@
 Game::Game() : currentState(GameState::CITY), isRunning(true), mouseX(0), mouseY(0), score(0), movesRemaining(10), playerSelected(false) {
     arenaButton = {350, 400, 100, 50};
 
+    tileMap = new TileMap(32, 800, 600);
+
     player = new Player(400, 300);
 }
 
 Game::~Game() {
     delete player;
+    delete tileMap;
 
     for (auto entity : entities) {
         delete entity;
@@ -19,6 +22,7 @@ Game::~Game() {
 }
 
 bool Game::initialize() {
+    tileMap->initialize();
     return true;
 }
 
@@ -115,6 +119,8 @@ void Game::render(Renderer& renderer) {
             renderArena(renderer);
             break;
     }
+
+    tileMap->render(renderer);
 
     for (auto entity : entities) {
         entity->render(renderer);

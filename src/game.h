@@ -7,6 +7,7 @@
 #include "renderer.h"
 #include "entity.h"
 #include "player.h"
+#include "tilemap.h"
 
 enum class GameState {
     CITY,
@@ -29,6 +30,8 @@ public:
 
     bool loadAssets(Renderer& renderer);
 
+    TileMap* getTileMap() const { return tileMap; }
+
 private:
     GameState currentState;
     bool isRunning;
@@ -43,6 +46,8 @@ private:
 
     Player* player;
     std::vector<Entity*> entities;
+
+    TileMap* tileMap;
 
     void handleCityEvents(SDL_Event& e);
     void handleArenaEvents(SDL_Event& e);
