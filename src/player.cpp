@@ -2,7 +2,7 @@
 #include <cmath>
 
 Player::Player(float x, float y)
-    : Entity(x, y, 32, 32), health(100), speed(4), isMoving(false), direction(0),
+    : Entity(std::floor(x / 32) * 32, std::floor(y / 32) * 32, 32, 32), health(100), speed(4), isMoving(false), direction(0),
                             targetX(x), targetY(y), hasTarget(false), selected(false) {
     textureID = "player";
 }
@@ -17,20 +17,14 @@ void Player::update() {
         float dy = targetY - y;
         float distance = std::sqrt(dx*dx + dy*dy);
 
-        if (distance > speed) {
-            float moveX = (dx / distance) * speed;
-            float moveY = (dy / distance) * speed;
-
+        if (std::abs(dx) > 1.0f) {
+            float moveX = (dx > 0) ? speed : -speed;
             setX(x + moveX);
+            direction = (dx > 0) ? 2 : 1;
+        }else if (std::abs(dy) > 1.0f) {
+            float moveY = (dy > 0) ? speed : -speed;
             setY(y + moveY);
-
-            if (std::abs(moveX) > std::abs(moveY)) {
-                direction = moveX > 0 ? 2 : 1;
-            }else {
-                direction = moveY > 0 ? 0 : 3;
-            }
-
-            isMoving = true;
+            direction = (dy > 0) ? 0 : 3;
         }else {
             setX(targetX);
             setY(targetY);
@@ -61,8 +55,8 @@ void Player::render(Renderer& renderer) {
 }
 
 void Player::setTargetPosition(float targetX, float targetY) {
-    this->targetX = targetX;
-    this->targetY = targetY;
+    this->targetX = std::floor(targetX / 32) * 32;
+    this->targetY = std::floor(targetY / 32) * 32;
     hasTarget = true;
 }
 

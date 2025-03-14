@@ -20,12 +20,13 @@ public:
     int getHealth() const { return health; }
     void setHealth(int newHealth) { health = newHealth; }
 
+    bool isCurrentlyMoving() const { return hasTarget; }
+
 private:
     int health;
     int speed;
-    bool isMoving;
     int direction;
-
+    bool isMoving;
     float targetX, targetY;
     bool hasTarget;
     bool selected;

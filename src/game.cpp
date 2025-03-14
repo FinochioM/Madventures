@@ -3,7 +3,7 @@
 
 
 Game::Game() : currentState(GameState::CITY), isRunning(true), mouseX(0), mouseY(0), score(0), movesRemaining(10), playerSelected(false) {
-    arenaButton = {350, 400, 100, 50};
+    //arenaButton = {350, 400, 100, 50};
 
     tileMap = new TileMap(32, 800, 600);
 
@@ -61,8 +61,18 @@ void Game::handleCityEvents(SDL_Event& e) {
             if (player->isPointOnPlayer(mouseX, mouseY)) {
                 player->setSelected(true);
                 playerSelected = true;
-            }else if (playerSelected) {
-                player->setTargetPosition(mouseX, mouseY);
+            }else if (playerSelected && !player->isCurrentlyMoving()) {
+                int gridX, gridY;
+                tileMap->pixelToGrid(mouseX, mouseY, gridX, gridY);
+
+                int pixelX, pixelY;
+                tileMap->gridToPixel(gridX, gridY, pixelX, pixelY);
+
+                int halfTileSize = tileMap->getTileSize() / 2;
+                pixelX += halfTileSize;
+                pixelY += halfTileSize;
+
+                player->setTargetPosition(pixelX, pixelY);
                 player->setSelected(false);
                 playerSelected = false;
             }
