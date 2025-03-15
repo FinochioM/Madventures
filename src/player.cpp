@@ -38,8 +38,8 @@ void Player::update() {
             if (!path.empty() && currentPathIndex < path.size() - 1) {
                 currentPathIndex++;
                 int tileSize = 32; // again get this from tilemap?
-                targetX = path[currentPathIndex].first * tileSize + tileSize / 2;
-                targetY = path[currentPathIndex].second * tileSize + tileSize / 2;
+                targetX = path[currentPathIndex].first * tileSize + tileSize - 32;
+                targetY = path[currentPathIndex].second * tileSize + tileSize - 32;
             } else {
                 isMoving = false;
                 hasTarget = false;
@@ -86,8 +86,8 @@ void Player::setPath(const std::vector<std::pair<int, int>>& newPath) {
 
     if (!path.empty()) {
         int tileSize = 32; // later get this from tilemap?
-        targetX = path[0].first * tileSize + tileSize / 2;
-        targetY = path[0].second * tileSize + tileSize / 2;
+        targetX = path[0].first * tileSize + tileSize - 32;
+        targetY = path[0].second * tileSize + tileSize - 32;
         hasTarget = true;
     }
 }

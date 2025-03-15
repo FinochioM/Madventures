@@ -1,5 +1,7 @@
 #include "tilemap.h"
 #include <iostream>
+#include <algorithm>
+#include <cmath>
 
 // global for now
 
@@ -38,7 +40,18 @@ void TileMap::initialize() {
             // default properties should go here ...
             // maybe like tiles[y][x]->setProperty("name", value);
 
-            bool isWalkable = ((x + y) % 2 == 0);
+            bool isWalkable = true;
+
+            // border
+            if (x == 0 || y == 0 || x == gridWidth - 1 || y == gridHeight - 1) {
+                isWalkable = false;
+            }
+
+            if ((x >= 5 && x <= 7 && y >= 5 && y <= 7) ||
+                (x >= 15 && x <= 17 && y >= 5 && y <= 7)) {
+                    isWalkable = false; //? ??? ?
+                }
+
             tiles[y][x]->setProperty("walkable", isWalkable);
         }
     }
@@ -207,7 +220,7 @@ bool TileMap::isInList(const std::vector<PathNode*>& list, int x, int y) const {
     }) != list.end();
 }
 
-PathNode* TileMap::getNodeFromList(std::vector<PathNode*>& list, int x, int y) const {
+TileMap::PathNode* TileMap::getNodeFromList(std::vector<PathNode*>& list, int x, int y) const {
     auto it = std::find_if(list.begin(), list.end(), [x, y](const PathNode* node) {
         return node->x == x && node->y == y;
     });
