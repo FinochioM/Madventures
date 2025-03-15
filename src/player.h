@@ -4,6 +4,7 @@
 #include "entity.h"
 #include <SDL2/SDL.h>
 #include <vector>
+#include "tilemap.h"
 
 class Player : public Entity {
 public:
@@ -26,6 +27,11 @@ public:
 
     bool isCurrentlyMoving() const { return hasTarget; }
 
+    void calculateAvailableTiles(const TileMap* tileMap);
+    const std::vector<std::pair<int, int>>& getAvailableTiles() const { return availableTiles; }
+    bool isTileAvailable(int gridX, int gridY) const;
+    int getMovementRange() const { return movementRange; }
+    void setMovementRange(int range) { movementRange = range; }
 private:
     int health;
     int speed;
@@ -37,6 +43,9 @@ private:
 
     std::vector<std::pair<int, int>> path;
     size_t currentPathIndex;
+
+    int movementRange;
+    std::vector<std::pair<int, int>> availableTiles;
 };
 
 #endif // PLAYER_H

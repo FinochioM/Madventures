@@ -1,9 +1,13 @@
 #include "player.h"
+#include "tilemap.h"
 #include <cmath>
+#include <queue>
+#include <set>
+#include <algorithm>
 
 Player::Player(float x, float y)
-    : Entity(std::floor(x / 32) * 32, std::floor(y / 32) * 32, 32, 32), health(100), speed(4), isMoving(false), direction(0),
-                            targetX(x), targetY(y), hasTarget(false), selected(false), currentPathIndex(0) {
+    : Entity(std::floor(x / 32) * 32, std::floor(y / 32) * 32, 32, 32), health(100), speed(5), isMoving(false), direction(0),
+                            targetX(x), targetY(y), hasTarget(false), selected(false), currentPathIndex(0), movementRange(5) {
     textureID = "player";
 }
 
@@ -90,4 +94,48 @@ void Player::setPath(const std::vector<std::pair<int, int>>& newPath) {
         targetY = path[0].second * tileSize + tileSize - 32;
         hasTarget = true;
     }
+}
+
+void Player::calculateAvailableTiles(const TileMap* tileMap) {
+    availableTiles.clear();
+
+    int playerGridX, playerGridY;
+    tileMap->pixelToGrid(x, y, playerGridX, playerGridY);
+
+    std::queue<std::pair<std::pair<int, int>, int>> que;
+    std::set<std::pair<int, int>> visited;
+
+    que.push(std::make_pair(std::make_pair(playerGridX, playerGridY), 0));
+    visited.insert(std::make_pair(playerGridX, playerGridY));
+    availableTiles.push_back(std::make_pair(playerGridX, playerGridY));
+
+    const int dx[4] = {0, 1, 0, -1};
+    const int dy[4] = {-1, 0, 1, 0};
+
+    while (!que.empty()) {
+        std::pair<int, int> current = que.front().first;
+        int distance = que.front().second;
+        que.pop();
+
+        if (distance >= movementRange) continue;
+
+        for (int i = 0; i < 4; i++) {
+            int newX = current.first + dx[i];
+            int newY = current.second + dy[i];
+            std::pair<int, int> newPos(newX, newY);
+
+            if (visited.find(newPos) != visited.end() || !tileMap->isWalkable(newX, newY)) {
+                continue;
+            }
+
+            visited.insert(newPos);
+            availableTiles.push_back(newPos);
+            que.push(std::make_pair(newPos, distance + 1));
+        }
+    }
+}
+
+bool Player::isTileAvailable(int gridX, int gridY) const {
+    return std::find(availableTiles.begin(), availableTiles.end(),
+                    std::make_pair(gridX, gridY)) != availableTiles.end();
 }

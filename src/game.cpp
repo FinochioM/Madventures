@@ -84,11 +84,14 @@ void Game::handleCityEvents(SDL_Event& e) {
             if (player->isPointOnPlayer(mouseX, mouseY)) {
                 player->setSelected(true);
                 playerSelected = true;
+
+                player->calculateAvailableTiles(tileMap);
             }else if (playerSelected && !player->isCurrentlyMoving()) {
                 int targetGridX, targetGridY;
                 tileMap->pixelToGrid(mouseX, mouseY, targetGridX, targetGridY);
 
-                if (tileMap->isWalkable(targetGridX, targetGridY)) {
+                if (tileMap->isWalkable(targetGridX, targetGridY) &&
+                    player->isTileAvailable(targetGridX, targetGridY)) {
                     int playerGridX, playerGridY;
                     tileMap->pixelToGrid(player->getX(), player->getY(), playerGridX, playerGridY);
 
@@ -99,12 +102,11 @@ void Game::handleCityEvents(SDL_Event& e) {
                         player->setPath(path);
                         player->setSelected(false);
                         playerSelected = false;
-                    }else {
+                    } else {
                         std::cout << "No valid path found?" << std::endl;
                     }
-                }else {
-                    // nothing?
-                    std::cout << "Cannot move there" << std::endl;
+                } else {
+                    std::cout << "Cannot move there - out of range or not walkable" << std::endl;
                 }
             }
         }
@@ -163,6 +165,8 @@ void Game::render(Renderer& renderer) {
 
     tileMap->render(renderer);
 
+    renderMovementRange(renderer);
+
     for (auto entity : entities) {
         entity->render(renderer);
     }
@@ -210,4 +214,19 @@ void Game::switchToArena() {
 
 void Game::cleanup() {
     // Cleanup I guesss.
+}
+
+void Game::renderMovementRange(Renderer& renderer) {
+    if (!playerSelected) return;
+
+    const auto& availableTiles = player->getAvailableTiles();
+
+    for (const auto& tile : availableTiles) {
+        int pixelX, pixelY;
+        tileMap->gridToPixel(tile.first, tile.second, pixelX, pixelY);
+
+        renderer.setDrawColor(0, 255, 0, 255);
+        SDL_Rect tileRect = {pixelX, pixelY, tileMap->getTileSize(), tileMap->getTileSize()};
+        renderer.drawRect(tileRect);
+    }
 }

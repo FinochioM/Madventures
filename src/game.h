@@ -55,6 +55,8 @@ private:
     void updateArena();
     void renderCity(Renderer& renderer);
     void renderArena(Renderer& renderer);
+
+    void renderMovementRange(Renderer& renderer);
 };
 
 #endif // GAME_H
