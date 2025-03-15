@@ -3,6 +3,7 @@
 
 #include "entity.h"
 #include <SDL2/SDL.h>
+#include <vector>
 
 class Player : public Entity {
 public:
@@ -20,6 +21,9 @@ public:
     int getHealth() const { return health; }
     void setHealth(int newHealth) { health = newHealth; }
 
+    void setPath(const std::vector<std::pair<int, int>>& newPath);
+    bool hasPath() const { return !path.empty() && currentPathIndex < path.size(); }
+
     bool isCurrentlyMoving() const { return hasTarget; }
 
 private:
@@ -30,6 +34,9 @@ private:
     float targetX, targetY;
     bool hasTarget;
     bool selected;
+
+    std::vector<std::pair<int, int>> path;
+    size_t currentPathIndex;
 };
 
 #endif // PLAYER_H

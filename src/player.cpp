@@ -3,7 +3,7 @@
 
 Player::Player(float x, float y)
     : Entity(std::floor(x / 32) * 32, std::floor(y / 32) * 32, 32, 32), health(100), speed(4), isMoving(false), direction(0),
-                            targetX(x), targetY(y), hasTarget(false), selected(false) {
+                            targetX(x), targetY(y), hasTarget(false), selected(false), currentPathIndex(0) {
     textureID = "player";
 }
 
@@ -17,19 +17,34 @@ void Player::update() {
         float dy = targetY - y;
         float distance = std::sqrt(dx*dx + dy*dy);
 
-        if (std::abs(dx) > 1.0f) {
-            float moveX = (dx > 0) ? speed : -speed;
+        if (distance > speed) {
+            float moveX = (dx / distance) * speed;
+            float moveY = (dy / distance) * speed;
+
             setX(x + moveX);
-            direction = (dx > 0) ? 2 : 1;
-        }else if (std::abs(dy) > 1.0f) {
-            float moveY = (dy > 0) ? speed : -speed;
             setY(y + moveY);
-            direction = (dy > 0) ? 0 : 3;
-        }else {
+
+            if (std::abs(dx) > std::abs(dy)) {
+                direction = (dx > 0) ? 2 : 1;
+            } else {
+                direction = (dy > 0) ? 0 : 3;
+            }
+
+            isMoving = true;
+        } else {
             setX(targetX);
             setY(targetY);
-            isMoving = false;
-            hasTarget = false;
+
+            if (!path.empty() && currentPathIndex < path.size() - 1) {
+                currentPathIndex++;
+                int tileSize = 32; // again get this from tilemap?
+                targetX = path[currentPathIndex].first * tileSize + tileSize / 2;
+                targetY = path[currentPathIndex].second * tileSize + tileSize / 2;
+            } else {
+                isMoving = false;
+                hasTarget = false;
+                path.clear();
+            }
         }
     }
 
@@ -63,4 +78,16 @@ void Player::setTargetPosition(float targetX, float targetY) {
 bool Player::isPointOnPlayer(int pointX, int pointY) const {
     return (pointX >= x && pointX <= x +width &&
             pointY >= y && pointY <= y + height);
+}
+
+void Player::setPath(const std::vector<std::pair<int, int>>& newPath) {
+    path = newPath;
+    currentPathIndex = 0;
+
+    if (!path.empty()) {
+        int tileSize = 32; // later get this from tilemap?
+        targetX = path[0].first * tileSize + tileSize / 2;
+        targetY = path[0].second * tileSize + tileSize / 2;
+        hasTarget = true;
+    }
 }

@@ -7,7 +7,7 @@ Game::Game() : currentState(GameState::CITY), isRunning(true), mouseX(0), mouseY
 
     tileMap = new TileMap(32, 800, 600);
 
-    player = new Player(400, 300);
+    player = new Player(0, 0);
 }
 
 Game::~Game() {
@@ -23,6 +23,29 @@ Game::~Game() {
 
 bool Game::initialize() {
     tileMap->initialize();
+
+    int playerGridX, playerGridY;
+    tileMap->pixelToGrid(player->getX(), player->getY(), playerGridX, playerGridY);
+
+    if (!tileMap->isWalkable(playerGridX, playerGridY)) {
+        for (int y = 0; y < tileMap->getGridHeight(); y++) {
+            for (int x = 0; x < tileMap->getGridWidth(); x++) {
+                if (tileMap->isWalkable(x, y)) {
+                    int pixelX, pixelY;
+                    tileMap->gridToPixel(x, y, pixelX, pixelY);
+
+                    int halfTileSize = tileMap->getTileSize() / 2;
+                    pixelX += halfTileSize;
+                    pixelY += halfTileSize;
+
+                    player->setX(pixelX - player->getCollider().w / 2);
+                    player->setY(pixelY - player->getCollider().h / 2);
+                    break;
+                }
+            }
+        }
+    }
+
     return true;
 }
 
@@ -62,19 +85,27 @@ void Game::handleCityEvents(SDL_Event& e) {
                 player->setSelected(true);
                 playerSelected = true;
             }else if (playerSelected && !player->isCurrentlyMoving()) {
-                int gridX, gridY;
-                tileMap->pixelToGrid(mouseX, mouseY, gridX, gridY);
+                int targetGridX, targetGridY;
+                tileMap->pixelToGrid(mouseX, mouseY, targetGridX, targetGridY);
 
-                int pixelX, pixelY;
-                tileMap->gridToPixel(gridX, gridY, pixelX, pixelY);
+                if (tileMap->isWalkable(targetGridX, targetGridY)) {
+                    int playerGridX, playerGridY;
+                    tileMap->pixelToGrid(player->getX(), player->getY(), playerGridX, playerGridY);
 
-                int halfTileSize = tileMap->getTileSize() / 2;
-                pixelX += halfTileSize;
-                pixelY += halfTileSize;
+                    std::vector<std::pair<int, int>> path =
+                        tileMap->findPath(playerGridX, playerGridY, targetGridX, targetGridY);
 
-                player->setTargetPosition(pixelX, pixelY);
-                player->setSelected(false);
-                playerSelected = false;
+                    if (!path.empty()) {
+                        player->setPath(path);
+                        player->setSelected(false);
+                        playerSelected = false;
+                    }else {
+                        std::cout << "No valid path found?" << std::endl;
+                    }
+                }else {
+                    // nothing?
+                    std::cout << "Cannot move there" << std::endl;
+                }
             }
         }
     }
