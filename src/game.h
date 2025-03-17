@@ -8,10 +8,12 @@
 #include "entity.h"
 #include "player.h"
 #include "tilemap.h"
+#include "map_editor.h"
 
 enum class GameState {
     CITY,
-    ARENA
+    ARENA,
+    EDITOR
 };
 
 class Game {
@@ -27,6 +29,7 @@ public:
 
     void switchToCity();
     void switchToArena();
+    void switchToEditor();
 
     bool loadAssets(Renderer& renderer);
 
@@ -43,18 +46,23 @@ private:
     int movesRemaining;
 
     SDL_Rect arenaButton;
+    SDL_Rect editorButton;
 
     Player* player;
     std::vector<Entity*> entities;
 
     TileMap* tileMap;
+    MapEditor* mapEditor;
 
     void handleCityEvents(SDL_Event& e);
     void handleArenaEvents(SDL_Event& e);
+    void handleEditorEvents(SDL_Event& e);
     void updateCity();
     void updateArena();
+    void updateEditor();
     void renderCity(Renderer& renderer);
     void renderArena(Renderer& renderer);
+    void renderEditor(Renderer& renderer);
 
     void renderMovementRange(Renderer& renderer);
 };

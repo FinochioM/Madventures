@@ -4,8 +4,10 @@
 
 Game::Game() : currentState(GameState::CITY), isRunning(true), mouseX(0), mouseY(0), score(0), movesRemaining(10), playerSelected(false) {
     //arenaButton = {350, 400, 100, 50};
+    editorButton = {460, 400, 100, 50};
 
     tileMap = new TileMap(32, 800, 600);
+    mapEditor = new MapEditor(tileMap);
 
     player = new Player(0, 0);
 }
@@ -13,6 +15,7 @@ Game::Game() : currentState(GameState::CITY), isRunning(true), mouseX(0), mouseY
 Game::~Game() {
     delete player;
     delete tileMap;
+    delete mapEditor;
 
     for (auto entity : entities) {
         delete entity;
@@ -70,6 +73,14 @@ void Game::handleEvent(SDL_Event& e) {
         SDL_GetMouseState(&mouseX, &mouseY);
     }
 
+    if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_m) {
+        if (currentState == GameState::EDITOR) {
+            switchToCity();
+        } else {
+            switchToEditor();
+        }
+    }
+
     switch (currentState) {
         case GameState::CITY:
             handleCityEvents(e);
@@ -86,6 +97,12 @@ void Game::handleCityEvents(SDL_Event& e) {
             if (mouseX >= arenaButton.x && mouseX <= arenaButton.x + arenaButton.w &&
                 mouseY >= arenaButton.y && mouseY <= arenaButton.y + arenaButton.h) {
                     switchToArena();
+                    return;
+            }
+
+            if (mouseX >= editorButton.x && mouseX <= editorButton.x + editorButton.w &&
+                mouseY >= editorButton.y && mouseY <= editorButton.y + editorButton.h) {
+                    switchToEditor();
                     return;
             }
 
@@ -136,6 +153,10 @@ void Game::handleArenaEvents(SDL_Event& e) {
     }
 }
 
+void Game::handleEditorEvents(SDL_Event& e) {
+    mapEditor->handleEvent(e);
+}
+
 void Game::update() {
     player->update();
 
@@ -150,15 +171,30 @@ void Game::update() {
         case GameState::ARENA:
             updateArena();
             break;
+        case GameState::EDITOR:
+            updateEditor();
+            break;
     }
 }
 
 void Game::updateCity() {
-    // City update logic
+    player->update();
+
+    for (auto entity : entities) {
+        entity->update();
+    }
 }
 
 void Game::updateArena() {
-    // Arena update logic
+    player->update();
+
+    for (auto entity : entities) {
+        entity->update();
+    }
+}
+
+void Game::updateEditor() {
+    mapEditor->update();
 }
 
 void Game::render(Renderer& renderer) {
@@ -168,6 +204,9 @@ void Game::render(Renderer& renderer) {
             break;
         case GameState::ARENA:
             renderArena(renderer);
+            break;
+        case GameState::EDITOR:
+            renderEditor(renderer);
             break;
     }
 
@@ -183,10 +222,10 @@ void Game::render(Renderer& renderer) {
 }
 
 void Game::renderCity(Renderer& renderer) {
-    renderer.setDrawColor(100, 100, 200, 255); // Light blue background for city
+    renderer.setDrawColor(100, 100, 200, 255);
     renderer.fillRect(0, 0, 800, 600);
 
-    renderer.setDrawColor(150, 150, 150, 255); // Gray button
+    renderer.setDrawColor(150, 150, 150, 255);
     renderer.fillRect(arenaButton);
 
     renderer.setDrawColor(0, 0, 0, 255); // Black text
@@ -197,7 +236,7 @@ void Game::renderCity(Renderer& renderer) {
 }
 
 void Game::renderArena(Renderer& renderer) {
-    renderer.setDrawColor(200, 100, 100, 255); // Light red background for arena
+    renderer.setDrawColor(200, 100, 100, 255);
     renderer.fillRect(0, 0, 800, 600);
 
     std::string scoreText = "Score: " + std::to_string(score);
@@ -209,6 +248,18 @@ void Game::renderArena(Renderer& renderer) {
     renderer.drawText("Click to use a move and earn points", 250, 300);
 }
 
+void Game::renderEditor(Renderer& renderer) {
+    renderer.setDrawColor(100, 100, 100, 255);
+    renderer.fillRect(0, 0, 800, 600);
+
+    tileMap->render(renderer);
+    mapEditor->render(renderer);
+
+    renderer.drawText("Map Editor - Press M to return to game", 10, 10);
+    renderer.drawText("Press Ctrl+S to save map", 10, 30);
+    renderer.drawText("Press Ctrl+L to load map", 10, 50);
+}
+
 void Game::switchToCity() {
     currentState = GameState::CITY;
     std::cout << "Switched to city" << std::endl;
@@ -218,6 +269,11 @@ void Game::switchToArena() {
     currentState = GameState::ARENA;
     movesRemaining = 10;
     std::cout << "Switched to arena" << std::endl;
+}
+
+void Game::switchToEditor() {
+    currentState = GameState::EDITOR;
+    std::cout << "Switched to editor" << std::endl;
 }
 
 void Game::cleanup() {
