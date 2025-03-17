@@ -75,6 +75,24 @@ private:
     void openPropertyEditor(int gridX, int gridY);
 
     bool isPointInRect(int x, int y, const SDL_Rect& rect) const;
+
+    std::string currentMapName;
+    std::vector<std::string> availableMaps;
+    bool showMapBrowser;
+    std::string inputMapName;
+    bool isNamingMap;
+    bool isSelectingMap;
+
+    SDL_Rect saveButtonArea;
+    SDL_Rect loadButtonArea;
+    SDL_Rect inputArea;
+    SDL_Rect mapListArea;
+
+    void renderMapBrowser(Renderer& renderer);
+    void refreshMapList();
+    std::string getMapPath(const std::string& mapName);
+
+    void drawUIBounds(Renderer& renderer);
 };
 
 #endif // MAP_EDITOR_H

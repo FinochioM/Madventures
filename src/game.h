@@ -66,6 +66,13 @@ private:
 
     void renderMovementRange(Renderer& renderer);
     void placePlayerInValidPosition();
+
+    std::string currentCity;
+    std::string currentArena;
+
+    bool loadMap(const std::string& mapName);
+    void setCurrentCity(const std::string& cityName);
+    void setCurrentArena(const std::string& arenaName);
 };
 
 #endif // GAME_H

@@ -29,6 +29,8 @@ public:
                         SDL_Rect* clip = nullptr, double andle = 0.0,
                         SDL_Point* center = nullptr, SDL_RendererFlip flip = SDL_FLIP_NONE);
 
+    SDL_Renderer* getRenderer() const { return renderer; }
+
 private:
     SDL_Renderer* renderer;
     std::map<std::string, SDL_Texture*> textureMap;

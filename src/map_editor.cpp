@@ -14,14 +14,25 @@ MapEditor::MapEditor(TileMap* tileMap) :
     currentLayer(EditorLayer::GROUND),
     currentTileIndex(0),
     showPropertyPanel(false),
-    editingPropertyValue(false) {
+    editingPropertyValue(false),
+    currentMapName("default"),
+    showMapBrowser(false),
+    isNamingMap(false),
+    isSelectingMap(false),
+    inputMapName("") {
 
     paletteArea = {600, 20, 180, 200};
     layerButtonsArea = {600, 230, 180, 80};
     toolButtonsArea = {600, 320, 180, 80};
     propertiesArea = {600, 410, 180, 170};
 
+    saveButtonArea = {20, 560, 100, 30};
+    loadButtonArea = {130, 560, 100, 30};
+    inputArea = {250, 250, 300, 50};
+    mapListArea = {250, 310, 300, 200};
+
     initializeAvailableTiles();
+    refreshMapList();
 }
 
 MapEditor::~MapEditor() {
@@ -43,10 +54,84 @@ void MapEditor::handleEvent(SDL_Event& e) {
         tileMap->pixelToGrid(mouseX, mouseY, gridX, gridY);
     }
 
+    if (showMapBrowser) {
+        if (e.type == SDL_KEYDOWN) {
+            if (isNamingMap) {
+                if (e.key.keysym.sym == SDLK_RETURN) {
+                    if (!inputMapName.empty()) {
+                        currentMapName = inputMapName;
+                        saveMap(getMapPath(currentMapName));
+                        showMapBrowser = false;
+                        isNamingMap = false;
+                    }
+                } else if (e.key.keysym.sym == SDLK_ESCAPE) {
+                    showMapBrowser = false;
+                    isNamingMap = false;
+                } else if (e.key.keysym.sym == SDLK_BACKSPACE) {
+                    if (!inputMapName.empty()) {
+                        inputMapName.pop_back();
+                    }
+                } else if (e.key.keysym.sym >= SDLK_a && e.key.keysym.sym <= SDLK_z ||
+                           e.key.keysym.sym >= SDLK_0 && e.key.keysym.sym <= SDLK_9 ||
+                           e.key.keysym.sym == SDLK_UNDERSCORE) {
+                    char c = (e.key.keysym.sym >= SDLK_a && e.key.keysym.sym <= SDLK_z) ?
+                            'a' + (e.key.keysym.sym - SDLK_a) :
+                            (e.key.keysym.sym >= SDLK_0 && e.key.keysym.sym <= SDLK_9) ?
+                            '0' + (e.key.keysym.sym - SDLK_0) : '_';
+
+                    if (e.key.keysym.mod & KMOD_SHIFT && c >= 'a' && c <= 'z') {
+                        c = 'A' + (c - 'a');
+                    }
+
+                    inputMapName += c;
+                }
+            }
+            else if (isSelectingMap) {
+                if (e.key.keysym.sym == SDLK_ESCAPE) {
+                    showMapBrowser = false;
+                    isSelectingMap = false;
+                }
+            }
+        }
+        else if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
+            if (isSelectingMap) {
+                int relativeY = mouseY - mapListArea.y;
+                int mapIndex = relativeY / 30;
+
+                if (mouseX >= mapListArea.x && mouseX < mapListArea.x + mapListArea.w &&
+                    relativeY >= 0 && mapIndex < availableMaps.size()) {
+                    currentMapName = availableMaps[mapIndex];
+                    loadMap(getMapPath(currentMapName));
+                    showMapBrowser = false;
+                    isSelectingMap = false;
+                }
+            }
+        }
+
+        return;
+    }
+
     if (e.type == SDL_MOUSEBUTTONDOWN) {
         if (e.button.button == SDL_BUTTON_LEFT) {
+            if (isPointInRect(mouseX, mouseY, saveButtonArea)) {
+                showMapBrowser = true;
+                isNamingMap = true;
+                isSelectingMap = false;
+                inputMapName = currentMapName;
+                return;
+            }
+
+            if (isPointInRect(mouseX, mouseY, loadButtonArea)) {
+                showMapBrowser = true;
+                isNamingMap = false;
+                isSelectingMap = true;
+                refreshMapList();
+                return;
+            }
+
             handleLeftClick(mouseX, mouseY);
-        } else if (e.button.button == SDL_BUTTON_RIGHT) {
+        }
+        else if (e.button.button == SDL_BUTTON_RIGHT) {
             handleRightClick(mouseX, mouseY);
         }
     }
@@ -81,12 +166,22 @@ void MapEditor::handleEvent(SDL_Event& e) {
                     break;
                 case SDLK_s:
                     if (e.key.keysym.mod & KMOD_CTRL) {
-                        saveMap("map.json");
+                        if (currentMapName.empty()) {
+                            showMapBrowser = true;
+                            isNamingMap = true;
+                            isSelectingMap = false;
+                            inputMapName = "default";
+                        } else {
+                            saveMap(getMapPath(currentMapName));
+                        }
                     }
                     break;
                 case SDLK_l:
                     if (e.key.keysym.mod & KMOD_CTRL) {
-                        loadMap("map.json");
+                        showMapBrowser = true;
+                        isNamingMap = false;
+                        isSelectingMap = true;
+                        refreshMapList();
                     }
                     break;
             }
@@ -235,6 +330,18 @@ void MapEditor::render(Renderer& renderer) {
         renderer.drawRect(pixelX, pixelY, tileMap->getTileSize(), tileMap->getTileSize());
     }
 
+    renderer.setDrawColor(80, 80, 180, 255);
+    renderer.fillRect(saveButtonArea);
+    renderer.setDrawColor(80, 180, 80, 255);
+    renderer.fillRect(loadButtonArea);
+
+    renderer.setDrawColor(255, 255, 255, 255);
+    renderer.drawText("Save Map", saveButtonArea.x + 10, saveButtonArea.y + 8);
+    renderer.drawText("Load Map", loadButtonArea.x + 10, loadButtonArea.y + 8);
+
+    std::string mapInfo = "Current Map: " + currentMapName;
+    renderer.drawText(mapInfo, 20, 530);
+
     renderPalette(renderer);
     renderLayerButtons(renderer);
     renderToolButtons(renderer);
@@ -242,6 +349,12 @@ void MapEditor::render(Renderer& renderer) {
     if (showPropertyPanel) {
         renderPropertyPanel(renderer);
     }
+
+    if (showMapBrowser) {
+        renderMapBrowser(renderer);
+    }
+
+    drawUIBounds(renderer);
 }
 
 void MapEditor::renderPalette(Renderer& renderer) {
@@ -358,6 +471,44 @@ void MapEditor::renderPropertyPanel(Renderer& renderer) {
     }
 }
 
+void MapEditor::renderMapBrowser(Renderer& renderer) {
+    renderer.setDrawColor(0, 0, 0, 200);
+    renderer.fillRect(0, 0, 800, 600);
+
+    renderer.setDrawColor(50, 50, 50, 255);
+    renderer.fillRect(200, 200, 400, 320);
+
+    renderer.setDrawColor(255, 255, 255, 255);
+
+    if (isNamingMap) {
+        renderer.drawText("Enter Map Name:", 250, 220);
+
+        renderer.setDrawColor(20, 20, 20, 255);
+        renderer.fillRect(inputArea);
+
+        renderer.setDrawColor(255, 255, 255, 255);
+        renderer.drawText(inputMapName + "_", inputArea.x + 10, inputArea.y + 15);
+
+        renderer.drawText("Press Enter to save, Escape to cancel", 250, 480);
+    }
+    else if (isSelectingMap) {
+        renderer.drawText("Select a Map:", 250, 220);
+
+        renderer.setDrawColor(20, 20, 20, 255);
+        renderer.fillRect(mapListArea);
+
+        renderer.setDrawColor(255, 255, 255, 255);
+
+        int y = mapListArea.y + 10;
+        for (const auto& mapName : availableMaps) {
+            renderer.drawText(mapName, mapListArea.x + 10, y);
+            y += 30;
+        }
+
+        renderer.drawText("Click on a map to load, Escape to cancel", 250, 480);
+    }
+}
+
 bool MapEditor::isPointInRect(int x, int y, const SDL_Rect& rect) const {
     return (x >= rect.x && x < rect.x + rect.w &&
             y >= rect.y && y < rect.y + rect.h);
@@ -365,6 +516,8 @@ bool MapEditor::isPointInRect(int x, int y, const SDL_Rect& rect) const {
 
 bool MapEditor::saveMap(const std::string& filename) {
     try {
+        std::filesystem::create_directories("maps");
+
         nlohmann::json mapJson;
 
         mapJson["width"] = tileMap->getGridWidth();
@@ -428,7 +581,17 @@ bool MapEditor::loadMap(const std::string& filename) {
 
         // TODO: Reinitialize tilemap with loaded dimensions if they differ
 
-        // Load tiles
+        for (int y = 0; y < tileMap->getGridHeight(); y++) {
+            for (int x = 0; x < tileMap->getGridWidth(); x++) {
+                Tile* tile = tileMap->getTileAt(x, y);
+                if (tile) {
+                    tile->setProperty("walkable", true);
+                    tile->setProperty("textureID", "");
+                    tile->setProperty("objectTexture", "");
+                }
+            }
+        }
+
         for (const auto& tileJson : mapJson["tiles"]) {
             int x = tileJson["x"];
             int y = tileJson["y"];
@@ -459,4 +622,57 @@ bool MapEditor::loadMap(const std::string& filename) {
         std::cerr << "Error loading map: " << e.what() << std::endl;
         return false;
     }
+}
+
+void MapEditor::refreshMapList() {
+    availableMaps.clear();
+
+    // maybe here scan a directory?
+    availableMaps.push_back("default");
+    availableMaps.push_back("city");
+    availableMaps.push_back("arena");
+
+    /*
+    DIR* dir;
+    struct dirent* ent;
+    if ((dir = opendir("maps/")) != NULL) {
+        while ((ent = readdir(dir)) != NULL) {
+            std::string filename = ent->d_name;
+            if (filename.length() > 5 &&
+                filename.substr(filename.length() - 5) == ".json") {
+                availableMaps.push_back(filename.substr(0, filename.length() - 5));
+            }
+        }
+        closedir(dir);
+    }
+    */
+}
+
+std::string MapEditor::getMapPath(const std::string& mapName) {
+    return "maps/" + mapName + ".json";
+}
+
+void MapEditor::drawUIBounds(Renderer& renderer) {
+    Uint8 r, g, b, a;
+    SDL_GetRenderDrawColor(renderer.getRenderer(), &r, &g, &b, &a);
+
+    renderer.setDrawColor(255, 0, 0, 255);
+    renderer.drawRect(paletteArea);
+
+    renderer.setDrawColor(0, 255, 0, 255);
+    renderer.drawRect(layerButtonsArea);
+
+    renderer.setDrawColor(0, 0, 255, 255);
+    renderer.drawRect(toolButtonsArea);
+
+    renderer.setDrawColor(255, 255, 0, 255);
+    renderer.drawRect(propertiesArea);
+
+    renderer.setDrawColor(255, 0, 255, 255);
+    renderer.drawRect(saveButtonArea);
+
+    renderer.setDrawColor(0, 255, 255, 255);
+    renderer.drawRect(loadButtonArea);
+
+    renderer.setDrawColor(r, g, b, a);
 }

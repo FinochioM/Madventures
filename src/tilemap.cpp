@@ -47,9 +47,33 @@ void TileMap::initialize() {
 }
 
 void TileMap::render(Renderer& renderer) {
+    for (int y = 0; y < gridHeight; y++) {
+        for (int x = 0; x < gridWidth; x++) {
+            Tile* tile = tiles[y][x];
+            if (tile) {
+                int pixelX = x * tileSize;
+                int pixelY = y * tileSize;
 
+                std::string textureID = tile->getProperty<std::string>("textureID", "");
+                if (!textureID.empty()) {
+                    renderer.renderTexture(textureID, pixelX, pixelY, tileSize, tileSize);
+                } else {
+                    renderer.setDrawColor(40, 40, 40, 255);
+                    renderer.fillRect(pixelX, pixelY, tileSize, tileSize);
+                }
 
-    // i could render different tiles here depending on their properties, dont know how tho.
+                std::string objectTextureID = tile->getProperty<std::string>("objectTexture", "");
+                if (!objectTextureID.empty()) {
+                    renderer.renderTexture(objectTextureID, pixelX, pixelY, tileSize, tileSize);
+                }
+
+                if (!tile->getProperty("walkable", true)) {
+                    renderer.setDrawColor(255, 0, 0, 100);
+                    renderer.drawRect(pixelX, pixelY, tileSize, tileSize);
+                }
+            }
+        }
+    }
 }
 
 void TileMap::pixelToGrid(int pixelX, int pixelY, int& gridX, int& gridY) const {

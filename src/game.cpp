@@ -1,9 +1,10 @@
 #include "game.h"
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 
 Game::Game() : currentState(GameState::CITY), isRunning(true), mouseX(0), mouseY(0), score(0), movesRemaining(10), playerSelected(false) {
-    //arenaButton = {350, 400, 100, 50};
+    arenaButton = {350, 400, 100, 50};
     editorButton = {460, 400, 100, 50};
 
     tileMap = new TileMap(32, 800, 600);
@@ -27,14 +28,20 @@ Game::~Game() {
 bool Game::initialize() {
     tileMap->initialize();
 
-    bool mapLoaded = false;
-    if (mapEditor) {
-        mapLoaded = mapEditor->loadMap("map.json");
-        if (mapLoaded) {
-            std::cout << "Successfully loaded map from file." << std::endl;
-        } else {
-            std::cout << "No map file found or error loading map. Using empty map." << std::endl;
-        }
+    currentCity = "city";
+    currentArena = "arena";
+
+    bool cityLoaded = loadMap(currentCity);
+    if (!cityLoaded) {
+        std::cout << "No city map found. Use the editor to create one." << std::endl;
+
+        std::filesystem::create_directories("maps");
+
+        switchToEditor();
+        mapEditor->saveMap("maps/city.json");
+        mapEditor->saveMap("maps/arena.json");
+
+        loadMap(currentCity);
     }
 
     placePlayerInValidPosition();
@@ -279,14 +286,18 @@ void Game::renderEditor(Renderer& renderer) {
 void Game::switchToCity() {
     currentState = GameState::CITY;
     mapEditor->setActive(false);
-    std::cout << "Switched to city" << std::endl;
+    loadMap(currentCity);
+    placePlayerInValidPosition();
+    std::cout << "Switched to city: " << currentCity << std::endl;
 }
 
 void Game::switchToArena() {
     currentState = GameState::ARENA;
     mapEditor->setActive(false);
+    loadMap(currentArena);
+    placePlayerInValidPosition();
     movesRemaining = 10;
-    std::cout << "Switched to arena" << std::endl;
+    std::cout << "Switched to arena: " << currentArena << std::endl;
 }
 
 void Game::switchToEditor() {
@@ -319,5 +330,29 @@ void Game::renderMovementRange(Renderer& renderer) {
         renderer.setDrawColor(0, 255, 0, 255);
         SDL_Rect tileRect = {pixelX, pixelY, tileMap->getTileSize(), tileMap->getTileSize()};
         renderer.drawRect(tileRect);
+    }
+}
+
+bool Game::loadMap(const std::string& mapName) {
+    std::string mapPath = "maps/" + mapName + ".json";
+    if (!mapEditor->loadMap(mapPath)) {
+        std::cerr << "Failed to load map: " << mapPath << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+void Game::setCurrentCity(const std::string& cityName) {
+    currentCity = cityName;
+    if (currentState == GameState::CITY) {
+        loadMap(currentCity);
+    }
+}
+
+void Game::setCurrentArena(const std::string& arenaName) {
+    currentArena = arenaName;
+    if (currentState == GameState::ARENA) {
+        loadMap(currentArena);
     }
 }
