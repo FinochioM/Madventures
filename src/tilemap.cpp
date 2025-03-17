@@ -53,6 +53,9 @@ void TileMap::initialize() {
                 }
 
             tiles[y][x]->setProperty("walkable", isWalkable);
+
+            std::string textureID = isWalkable ? "tile_grass" : "tile_wall";
+            tiles[y][x]->setProperty("textureID", textureID);
         }
     }
 
@@ -60,25 +63,29 @@ void TileMap::initialize() {
 }
 
 void TileMap::render(Renderer& renderer) {
-    // should load textures here too.
-    // lines for now
-
     for (int y = 0; y < gridHeight; y++) {
         for (int x = 0; x < gridWidth; x++) {
-            bool isWalkable = tiles[y][x]->getProperty("walkable", false);
-
-            if (isWalkable) {
-                renderer.setDrawColor(60, 100, 60, 255);
-            }else {
-                renderer.setDrawColor(100, 60, 60, 255);
-            }
+            std::string textureID = tiles[y][x]->getProperty<std::string>("textureID", "");
 
             int pixelX, pixelY;
             gridToPixel(x, y, pixelX, pixelY);
-            renderer.fillRect(pixelX, pixelY, tileSize, tileSize);
+
+            if (!textureID.empty()) {
+                renderer.renderTexture(textureID, pixelX, pixelY, tileSize, tileSize);
+            } else {
+                bool isWalkable = tiles[y][x]->getProperty("walkable", false);
+                if (isWalkable) {
+                    renderer.setDrawColor(60, 100, 60, 255);
+                }else {
+                    renderer.setDrawColor(100, 60, 60, 255);
+                }
+
+                renderer.fillRect(pixelX, pixelY, tileSize, tileSize);
+            }
         }
     }
 
+    /*
     renderer.setDrawColor(50, 50, 50, 255);
 
     for (int y = 0; y <= gridHeight; y++) {
@@ -90,6 +97,7 @@ void TileMap::render(Renderer& renderer) {
         int pixelX = x * tileSize;
         renderer.drawRect(pixelX, 0, 1, windowHeight);
     }
+    */
 
     // i could render different tiles here depending on their properties, dont know how tho.
 }
@@ -226,4 +234,10 @@ TileMap::PathNode* TileMap::getNodeFromList(std::vector<PathNode*>& list, int x,
     });
 
     return (it != list.end()) ? *it : nullptr;
+}
+
+void TileMap::setTileTexture(int gridX, int gridY, const std::string& textureID) {
+    if (isValidGridPosition(gridX, gridY)) {
+        tiles[gridY][gridX]->setProperty("textureID", textureID);
+    }
 }

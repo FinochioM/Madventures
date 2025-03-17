@@ -28,6 +28,7 @@ public:
 
     std::vector<std::pair<int, int>> findPath(int startX, int startY, int endX, int endY) const;
 
+    void setTileTexture(int gridX, int gridY, const std::string& textureID);
 private:
     int tileSize;
     int windowWidth;
@@ -49,7 +50,7 @@ private:
 
     int calculateHeuristic(int x1, int y1, int x2, int y2) const;
     bool isInList(const std::vector<PathNode*>& list, int x, int y) const;
-    PathNode* getNodeFromList(std::vector<PathNode*>& list, int x, int y) const; 
+    PathNode* getNodeFromList(std::vector<PathNode*>& list, int x, int y) const;
 };
 
 #endif // TILEMAP_H

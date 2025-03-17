@@ -54,6 +54,14 @@ bool Game::loadAssets(Renderer& renderer) {
         std::cout << "Warning: Player sprite not found. Using placeholder." << std::endl;
     }
 
+    if (!renderer.loadTexture("tile_grass", "assets/tile_grass.png")){
+        std::cout << "Warning: Tile Grass sprite not found. Using placeholder." << std::endl;
+    }
+
+    if (!renderer.loadTexture("tile_wall", "assets/tile_wall.png")){
+        std::cout << "Warning: Tile Wall sprite not found. Using placeholder." << std::endl;
+    }
+
     return true;
 }
 
