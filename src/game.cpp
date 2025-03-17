@@ -278,10 +278,6 @@ void Game::renderEditor(Renderer& renderer) {
 
     tileMap->render(renderer);
     mapEditor->render(renderer);
-
-    renderer.drawText("Map Editor - Press M to return to game", 10, 10);
-    renderer.drawText("Press Ctrl+S to save map", 10, 30);
-    renderer.drawText("Press Ctrl+L to load map", 10, 50);
 }
 
 void Game::switchToCity() {

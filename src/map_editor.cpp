@@ -28,15 +28,23 @@ MapEditor::MapEditor(TileMap* tileMap) :
     selectedTileX(0),
     selectedTileY(0) {
 
-    palettePanelHeaderArea = {600, 20, 180, 30};
-    layersPanelHeaderArea = {600, 60, 180, 30};
-    toolsPanelHeaderArea = {600, 100, 180, 30};
-    propertiesPanelHeaderArea = {600, 140, 180, 30};
+    int headerWidth = 150;
+    int headerHeight = 30;
+    int headerY = 10;
 
-    paletteArea = {600, 50, 180, 180};
-    layerButtonsArea = {600, 90, 180, 110};
-    toolButtonsArea = {600, 130, 180, 110};
-    propertiesArea = {600, 170, 180, 200};
+    palettePanelHeaderArea = {20, headerY, headerWidth, headerHeight};
+    layersPanelHeaderArea = {20 + headerWidth + 10, headerY, headerWidth, headerHeight};
+    toolsPanelHeaderArea = {20 + (headerWidth + 10) * 2, headerY, headerWidth, headerHeight};
+    propertiesPanelHeaderArea = {20 + (headerWidth + 10) * 3, headerY, headerWidth, headerHeight};
+
+    int panelWidth = 180;
+    int panelHeight = 200;
+    int panelY = headerY + headerHeight + 5;
+
+    paletteArea = {palettePanelHeaderArea.x, panelY, panelWidth, panelHeight};
+    layerButtonsArea = {layersPanelHeaderArea.x, panelY, panelWidth, panelHeight};
+    toolButtonsArea = {toolsPanelHeaderArea.x, panelY, panelWidth, panelHeight};
+    propertiesArea = {propertiesPanelHeaderArea.x, panelY, panelWidth, panelHeight};
 
     saveButtonArea = {20, 560, 100, 30};
     loadButtonArea = {130, 560, 100, 30};
@@ -126,22 +134,51 @@ void MapEditor::handleEvent(SDL_Event& e) {
     if (e.type == SDL_MOUSEBUTTONDOWN) {
         if (e.button.button == SDL_BUTTON_LEFT) {
             if (isPointInRect(mouseX, mouseY, palettePanelHeaderArea)) {
-                palettePanelExpanded = !palettePanelExpanded;
+                bool wasExpanded = palettePanelExpanded;
+                palettePanelExpanded = false;
+                layersPanelExpanded = false;
+                toolsPanelExpanded = false;
+                propertiesPanelExpanded = false;
+                if (!wasExpanded) {
+                    palettePanelExpanded = true;
+                }
                 return;
             }
 
             if (isPointInRect(mouseX, mouseY, layersPanelHeaderArea)) {
-                layersPanelExpanded = !layersPanelExpanded;
+                bool wasExpanded = layersPanelExpanded;
+                palettePanelExpanded = false;
+                layersPanelExpanded = false;
+                toolsPanelExpanded = false;
+                propertiesPanelExpanded = false;
+                if (!wasExpanded) {
+                    layersPanelExpanded = true;
+                }
                 return;
             }
 
             if (isPointInRect(mouseX, mouseY, toolsPanelHeaderArea)) {
-                toolsPanelExpanded = !toolsPanelExpanded;
+                bool wasExpanded = toolsPanelExpanded;
+
+                palettePanelExpanded = false;
+                layersPanelExpanded = false;
+                toolsPanelExpanded = false;
+                propertiesPanelExpanded = false;
+                if (!wasExpanded) {
+                    toolsPanelExpanded = true;
+                }
                 return;
             }
 
             if (isPointInRect(mouseX, mouseY, propertiesPanelHeaderArea)) {
-                propertiesPanelExpanded = !propertiesPanelExpanded;
+                bool wasExpanded = propertiesPanelExpanded;
+                palettePanelExpanded = false;
+                layersPanelExpanded = false;
+                toolsPanelExpanded = false;
+                propertiesPanelExpanded = false;
+                if (!wasExpanded) {
+                    propertiesPanelExpanded = true;
+                }
                 return;
             }
 
