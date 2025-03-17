@@ -105,6 +105,12 @@ private:
     SDL_Rect propertiesPanelHeaderArea;
 
     void scanMapDirectory();
+
+    int selectedTileX;
+    int selectedTileY;
+    bool hasTileSelected;
+
+    bool isPointOverAnyPanel(int x, int y) const;
 };
 
 #endif // MAP_EDITOR_H

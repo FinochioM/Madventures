@@ -23,7 +23,10 @@ MapEditor::MapEditor(TileMap* tileMap) :
     palettePanelExpanded(false),
     layersPanelExpanded(false),
     toolsPanelExpanded(false),
-    propertiesPanelExpanded(false) {
+    propertiesPanelExpanded(false),
+    hasTileSelected(false),
+    selectedTileX(0),
+    selectedTileY(0) {
 
     palettePanelHeaderArea = {600, 20, 180, 30};
     layersPanelHeaderArea = {600, 60, 180, 30};
@@ -158,49 +161,45 @@ void MapEditor::handleEvent(SDL_Event& e) {
                 return;
             }
 
-            if (palettePanelExpanded && isPointInRect(mouseX, mouseY, paletteArea)) {
-                int relativeY = mouseY - paletteArea.y;
-                int tileIndex = relativeY / 30;
+            if (isPointOverAnyPanel(mouseX, mouseY)) {
+                if (palettePanelExpanded && isPointInRect(mouseX, mouseY, paletteArea)) {
+                    int relativeY = mouseY - paletteArea.y;
+                    int tileIndex = relativeY / 30;
 
-                if (tileIndex >= 0 && tileIndex < availableTiles.size()) {
-                    currentTileIndex = tileIndex;
+                    if (tileIndex >= 0 && tileIndex < availableTiles.size()) {
+                        currentTileIndex = tileIndex;
+                    }
                 }
-                return;
-            }
-
-            if (layersPanelExpanded && isPointInRect(mouseX, mouseY, layerButtonsArea)) {
-                int relativeY = mouseY - layerButtonsArea.y;
-                if (relativeY < 30) {
-                    currentLayer = EditorLayer::GROUND;
-                } else if (relativeY < 60) {
-                    currentLayer = EditorLayer::OBJECTS;
-                } else {
-                    currentLayer = EditorLayer::COLLISION;
+                else if (layersPanelExpanded && isPointInRect(mouseX, mouseY, layerButtonsArea)) {
+                    int relativeY = mouseY - layerButtonsArea.y;
+                    if (relativeY < 30) {
+                        currentLayer = EditorLayer::GROUND;
+                    } else if (relativeY < 60) {
+                        currentLayer = EditorLayer::OBJECTS;
+                    } else {
+                        currentLayer = EditorLayer::COLLISION;
+                    }
                 }
-                return;
-            }
-
-            if (toolsPanelExpanded && isPointInRect(mouseX, mouseY, toolButtonsArea)) {
-                int relativeY = mouseY - toolButtonsArea.y;
-                if (relativeY < 30) {
-                    currentTool = EditorTool::PENCIL;
-                } else if (relativeY < 60) {
-                    currentTool = EditorTool::ERASER;
-                } else {
-                    currentTool = EditorTool::PROPERTY_EDITOR;
+                else if (toolsPanelExpanded && isPointInRect(mouseX, mouseY, toolButtonsArea)) {
+                    int relativeY = mouseY - toolButtonsArea.y;
+                    if (relativeY < 30) {
+                        currentTool = EditorTool::PENCIL;
+                    } else if (relativeY < 60) {
+                        currentTool = EditorTool::ERASER;
+                    } else {
+                        currentTool = EditorTool::PROPERTY_EDITOR;
+                    }
                 }
-                return;
-            }
+                else if (propertiesPanelExpanded && isPointInRect(mouseX, mouseY, propertiesArea)) {
+                    int relativeY = mouseY - propertiesArea.y;
+                    int propertyIndex = (relativeY - 30) / 30;
 
-            if (propertiesPanelExpanded && isPointInRect(mouseX, mouseY, propertiesArea)) {
-                int relativeY = mouseY - propertiesArea.y;
-                int propertyIndex = (relativeY - 30) / 30;
-
-                if (propertyIndex == 0) {
-                    Tile* tile = tileMap->getTileAt(gridX, gridY);
-                    if (tile) {
-                        bool isWalkable = tile->getProperty("walkable", true);
-                        tile->setProperty("walkable", !isWalkable);
+                    if (propertyIndex == 0 && hasTileSelected) {
+                        Tile* tile = tileMap->getTileAt(selectedTileX, selectedTileY);
+                        if (tile) {
+                            bool isWalkable = tile->getProperty("walkable", true);
+                            tile->setProperty("walkable", !isWalkable);
+                        }
                     }
                 }
                 return;
@@ -216,7 +215,6 @@ void MapEditor::handleEvent(SDL_Event& e) {
                         break;
                     case EditorTool::PROPERTY_EDITOR:
                         openPropertyEditor(gridX, gridY);
-                        propertiesPanelExpanded = true;
                         break;
                 }
             }
@@ -224,6 +222,7 @@ void MapEditor::handleEvent(SDL_Event& e) {
         else if (e.button.button == SDL_BUTTON_RIGHT) {
             if (propertiesPanelExpanded) {
                 propertiesPanelExpanded = false;
+                hasTileSelected = false;
             }
         }
     }
@@ -391,11 +390,13 @@ void MapEditor::eraseTileAtPosition(int gridX, int gridY) {
 void MapEditor::openPropertyEditor(int gridX, int gridY) {
     Tile* tile = tileMap->getTileAt(gridX, gridY);
     if (tile) {
-        showPropertyPanel = true;
-        tile->setProperty("_editorX", gridX);
-        tile->setProperty("_editorY", gridY);
+        selectedTileX = gridX;
+        selectedTileY = gridY;
+        hasTileSelected = true;
+        propertiesPanelExpanded = true;
     }
 }
+
 
 void MapEditor::update() {
     if (!active) return;
@@ -419,6 +420,14 @@ void MapEditor::render(Renderer& renderer) {
         tileMap->gridToPixel(gridX, gridY, pixelX, pixelY);
 
         renderer.setDrawColor(255, 255, 0, 100);
+        renderer.drawRect(pixelX, pixelY, tileMap->getTileSize(), tileMap->getTileSize());
+    }
+
+    if (hasTileSelected && propertiesPanelExpanded) {
+        int pixelX, pixelY;
+        tileMap->gridToPixel(selectedTileX, selectedTileY, pixelX, pixelY);
+
+        renderer.setDrawColor(0, 255, 255, 150);
         renderer.drawRect(pixelX, pixelY, tileMap->getTileSize(), tileMap->getTileSize());
     }
 
@@ -561,20 +570,23 @@ void MapEditor::renderPropertyPanel(Renderer& renderer) {
     renderer.drawText("Tile Properties", propertiesArea.x + 10, propertiesArea.y + 5);
 
     Tile* tile = nullptr;
-    if (tileMap->isValidGridPosition(gridX, gridY)) {
-        tile = tileMap->getTileAt(gridX, gridY);
+    if (hasTileSelected && tileMap->isValidGridPosition(selectedTileX, selectedTileY)) {
+        tile = tileMap->getTileAt(selectedTileX, selectedTileY);
     }
 
     if (tile) {
         renderer.setDrawColor(255, 255, 255, 255);
 
-        renderer.drawText("Walkable:", propertiesArea.x + 10, propertiesArea.y + 35);
+        std::string posText = "Selected: " + std::to_string(selectedTileX) + "," + std::to_string(selectedTileY);
+        renderer.drawText(posText, propertiesArea.x + 10, propertiesArea.y + 35);
+
+        renderer.drawText("Walkable:", propertiesArea.x + 10, propertiesArea.y + 65);
 
         bool isWalkable = tile->getProperty("walkable", true);
 
         SDL_Rect toggleRect = {
             propertiesArea.x + 100,
-            propertiesArea.y + 32,
+            propertiesArea.y + 62,
             40,
             20
         };
@@ -590,15 +602,16 @@ void MapEditor::renderPropertyPanel(Renderer& renderer) {
         renderer.setDrawColor(255, 255, 255, 255);
         renderer.drawText(isWalkable ? "True" : "False", toggleRect.x + 5, toggleRect.y + 3);
 
-        std::string posText = "Position: " + std::to_string(gridX) + "," + std::to_string(gridY);
-        renderer.drawText(posText, propertiesArea.x + 10, propertiesArea.y + 65);
-
         renderer.drawText("Texture:", propertiesArea.x + 10, propertiesArea.y + 95);
         std::string textureID = tile->getProperty<std::string>("textureID", "none");
         renderer.drawText(textureID, propertiesArea.x + 80, propertiesArea.y + 95);
 
         renderer.drawText("Click to toggle walkable", propertiesArea.x + 10, propertiesArea.y + 140);
         renderer.drawText("Right-click to close panel", propertiesArea.x + 10, propertiesArea.y + 160);
+    } else {
+        renderer.drawText("No tile selected", propertiesArea.x + 10, propertiesArea.y + 80);
+        renderer.drawText("Use the Property Tool", propertiesArea.x + 10, propertiesArea.y + 110);
+        renderer.drawText("to select a tile", propertiesArea.x + 10, propertiesArea.y + 130);
     }
 }
 
@@ -812,4 +825,24 @@ void MapEditor::scanMapDirectory() {
         availableMaps.push_back("city");
         availableMaps.push_back("arena");
     }
+}
+
+bool MapEditor::isPointOverAnyPanel(int x, int y) const {
+    if (palettePanelExpanded && isPointInRect(x, y, paletteArea)) {
+        return true;
+    }
+
+    if (layersPanelExpanded && isPointInRect(x, y, layerButtonsArea)) {
+        return true;
+    }
+
+    if (toolsPanelExpanded && isPointInRect(x, y, toolButtonsArea)) {
+        return true;
+    }
+
+    if (propertiesPanelExpanded && isPointInRect(x, y, propertiesArea)) {
+        return true;
+    }
+
+    return false;
 }
