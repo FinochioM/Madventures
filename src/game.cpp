@@ -84,6 +84,31 @@ bool Game::loadAssets(Renderer& renderer) {
         std::cout << "Warning: Tile Wall sprite not found. Using placeholder." << std::endl;
     }
 
+    if (!renderer.loadTexture("base_limit", "assets/base_limit.png")){
+        std::cout << "Warning: Tile Wall sprite not found. Using placeholder." << std::endl;
+    }
+
+    if (!renderer.loadTexture("border_grass", "assets/border_grass.png")){
+        std::cout << "Warning: Tile Wall sprite not found. Using placeholder." << std::endl;
+    }
+
+    if (!renderer.loadTexture("border1", "assets/border1.png")){
+        std::cout << "Warning: Tile Wall sprite not found. Using placeholder." << std::endl;
+    }
+
+    if (!renderer.loadTexture("border2", "assets/border2.png")){
+        std::cout << "Warning: Tile Wall sprite not found. Using placeholder." << std::endl;
+    }
+
+    if (!renderer.loadTexture("border_path", "assets/border_path.png")){
+        std::cout << "Warning: Tile Wall sprite not found. Using placeholder." << std::endl;
+    }
+
+    if (!renderer.loadTexture("border_water", "assets/border_water.png")){
+        std::cout << "Warning: Tile Wall sprite not found. Using placeholder." << std::endl;
+    }
+
+    
     return true;
 }
 

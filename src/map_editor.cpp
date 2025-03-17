@@ -62,7 +62,12 @@ MapEditor::~MapEditor() {
 void MapEditor::initializeAvailableTiles() {
     availableTiles.push_back({"tile_grass", "Grass", true});
     availableTiles.push_back({"tile_wall", "Wall", false});
-    //availableTiles.push_back({"tile_water", "Water", false});
+    availableTiles.push_back({"base_limit", "Limit", false});
+    availableTiles.push_back({"border1", "Border 1", false});
+    availableTiles.push_back({"border2", "Border 2", false});
+    availableTiles.push_back({"border_grass", "Border Grass", false});
+    availableTiles.push_back({"border_path", "Border Path", false});
+    availableTiles.push_back({"border_water", "Border Water", false});
     // Add more tiles as needed
 }
 
