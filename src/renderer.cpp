@@ -11,6 +11,18 @@ Renderer::~Renderer() {
 
 void Renderer::initialize(SDL_Renderer* sdlRenderer) {
     renderer = sdlRenderer;
+
+    if (TTF_WasInit() == 0) {
+        if (TTF_Init() == -1) {
+            std::cerr << "SDL_ttf could not initialize! SDL_ttf Error: " << TTF_GetError() << std::endl;
+            return;
+        }
+    }
+
+    font = TTF_OpenFont("assets/fonts/Roboto.ttf", 16);
+    if (!font) {
+        std::cerr << "Failed to load font! SDL_ttf Error: " << TTF_GetError() << std::endl;
+    }
 }
 
 void Renderer::cleanup() {
@@ -21,6 +33,11 @@ void Renderer::cleanup() {
     }
 
     textureMap.clear();
+
+    if (font) {
+        TTF_CloseFont(font);
+        font = nullptr;
+    }
 
     renderer = nullptr;
 }
@@ -57,8 +74,36 @@ void Renderer::drawRect(const SDL_Rect& rect) {
 }
 
 void Renderer::drawText(const std::string& text, int x, int y) {
-    setDrawColor(255, 255, 255, 255);
-    fillRect(x, y, text.length() * 8, 15);
+    if (!font) {
+        setDrawColor(255, 255, 255, 255);
+        fillRect(x, y, text.length() * 8, 15);
+        return;
+    }
+
+    SDL_Color textColor = {255, 255, 255, 255};
+    SDL_Surface* textSurface = TTF_RenderText_Solid(font, text.c_str(), textColor);
+    if (!textSurface) {
+        std::cerr << "Unable to render text surface! SDL_ttf Error: " << TTF_GetError() << std::endl;
+        return;
+    }
+
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+    if (!textTexture) {
+        std::cerr << "Unable to create texture from rendered text! SDL Error: " << SDL_GetError() << std::endl;
+        SDL_FreeSurface(textSurface);
+        return;
+    }
+
+    int width = textSurface->w;
+    int height = textSurface->h;
+
+    SDL_FreeSurface(textSurface);
+
+    SDL_Rect destRect = {x, y, width, height};
+
+    SDL_RenderCopy(renderer, textTexture, NULL, &destRect);
+
+    SDL_DestroyTexture(textTexture);
 }
 
 bool Renderer::loadTexture(const std::string& id, const std::string& filePath) {

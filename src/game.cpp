@@ -99,6 +99,9 @@ void Game::handleEvent(SDL_Event& e) {
         case GameState::ARENA:
             handleArenaEvents(e);
             break;
+        case GameState::EDITOR:
+            handleEditorEvents(e);
+            break;
     }
 }
 

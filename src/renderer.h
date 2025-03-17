@@ -3,6 +3,7 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_Image.h>
+#include <SDL2/SDL_ttf.h>
 #include <string>
 #include <map>
 
@@ -31,6 +32,7 @@ public:
 private:
     SDL_Renderer* renderer;
     std::map<std::string, SDL_Texture*> textureMap;
+    TTF_Font* font;
 };
 
 
