@@ -19,12 +19,21 @@ MapEditor::MapEditor(TileMap* tileMap) :
     showMapBrowser(false),
     isNamingMap(false),
     isSelectingMap(false),
-    inputMapName("") {
+    inputMapName(""),
+    palettePanelExpanded(false),
+    layersPanelExpanded(false),
+    toolsPanelExpanded(false),
+    propertiesPanelExpanded(false) {
 
-    paletteArea = {600, 20, 180, 200};
-    layerButtonsArea = {600, 230, 180, 80};
-    toolButtonsArea = {600, 320, 180, 80};
-    propertiesArea = {600, 410, 180, 170};
+    palettePanelHeaderArea = {600, 20, 180, 30};
+    layersPanelHeaderArea = {600, 60, 180, 30};
+    toolsPanelHeaderArea = {600, 100, 180, 30};
+    propertiesPanelHeaderArea = {600, 140, 180, 30};
+
+    paletteArea = {600, 50, 180, 180};
+    layerButtonsArea = {600, 90, 180, 110};
+    toolButtonsArea = {600, 130, 180, 110};
+    propertiesArea = {600, 170, 180, 200};
 
     saveButtonArea = {20, 560, 100, 30};
     loadButtonArea = {130, 560, 100, 30};
@@ -113,6 +122,26 @@ void MapEditor::handleEvent(SDL_Event& e) {
 
     if (e.type == SDL_MOUSEBUTTONDOWN) {
         if (e.button.button == SDL_BUTTON_LEFT) {
+            if (isPointInRect(mouseX, mouseY, palettePanelHeaderArea)) {
+                palettePanelExpanded = !palettePanelExpanded;
+                return;
+            }
+
+            if (isPointInRect(mouseX, mouseY, layersPanelHeaderArea)) {
+                layersPanelExpanded = !layersPanelExpanded;
+                return;
+            }
+
+            if (isPointInRect(mouseX, mouseY, toolsPanelHeaderArea)) {
+                toolsPanelExpanded = !toolsPanelExpanded;
+                return;
+            }
+
+            if (isPointInRect(mouseX, mouseY, propertiesPanelHeaderArea)) {
+                propertiesPanelExpanded = !propertiesPanelExpanded;
+                return;
+            }
+
             if (isPointInRect(mouseX, mouseY, saveButtonArea)) {
                 showMapBrowser = true;
                 isNamingMap = true;
@@ -129,10 +158,73 @@ void MapEditor::handleEvent(SDL_Event& e) {
                 return;
             }
 
-            handleLeftClick(mouseX, mouseY);
+            if (palettePanelExpanded && isPointInRect(mouseX, mouseY, paletteArea)) {
+                int relativeY = mouseY - paletteArea.y;
+                int tileIndex = relativeY / 30;
+
+                if (tileIndex >= 0 && tileIndex < availableTiles.size()) {
+                    currentTileIndex = tileIndex;
+                }
+                return;
+            }
+
+            if (layersPanelExpanded && isPointInRect(mouseX, mouseY, layerButtonsArea)) {
+                int relativeY = mouseY - layerButtonsArea.y;
+                if (relativeY < 30) {
+                    currentLayer = EditorLayer::GROUND;
+                } else if (relativeY < 60) {
+                    currentLayer = EditorLayer::OBJECTS;
+                } else {
+                    currentLayer = EditorLayer::COLLISION;
+                }
+                return;
+            }
+
+            if (toolsPanelExpanded && isPointInRect(mouseX, mouseY, toolButtonsArea)) {
+                int relativeY = mouseY - toolButtonsArea.y;
+                if (relativeY < 30) {
+                    currentTool = EditorTool::PENCIL;
+                } else if (relativeY < 60) {
+                    currentTool = EditorTool::ERASER;
+                } else {
+                    currentTool = EditorTool::PROPERTY_EDITOR;
+                }
+                return;
+            }
+
+            if (propertiesPanelExpanded && isPointInRect(mouseX, mouseY, propertiesArea)) {
+                int relativeY = mouseY - propertiesArea.y;
+                int propertyIndex = (relativeY - 30) / 30;
+
+                if (propertyIndex == 0) {
+                    Tile* tile = tileMap->getTileAt(gridX, gridY);
+                    if (tile) {
+                        bool isWalkable = tile->getProperty("walkable", true);
+                        tile->setProperty("walkable", !isWalkable);
+                    }
+                }
+                return;
+            }
+
+            if (tileMap->isValidGridPosition(gridX, gridY)) {
+                switch (currentTool) {
+                    case EditorTool::PENCIL:
+                        applyTileAtPosition(gridX, gridY);
+                        break;
+                    case EditorTool::ERASER:
+                        eraseTileAtPosition(gridX, gridY);
+                        break;
+                    case EditorTool::PROPERTY_EDITOR:
+                        openPropertyEditor(gridX, gridY);
+                        propertiesPanelExpanded = true;
+                        break;
+                }
+            }
         }
         else if (e.button.button == SDL_BUTTON_RIGHT) {
-            handleRightClick(mouseX, mouseY);
+            if (propertiesPanelExpanded) {
+                propertiesPanelExpanded = false;
+            }
         }
     }
 
@@ -342,11 +434,31 @@ void MapEditor::render(Renderer& renderer) {
     std::string mapInfo = "Current Map: " + currentMapName;
     renderer.drawText(mapInfo, 20, 530);
 
-    renderPalette(renderer);
-    renderLayerButtons(renderer);
-    renderToolButtons(renderer);
+    renderer.setDrawColor(40, 40, 80, 200);
+    renderer.fillRect(palettePanelHeaderArea);
+    renderer.fillRect(layersPanelHeaderArea);
+    renderer.fillRect(toolsPanelHeaderArea);
+    renderer.fillRect(propertiesPanelHeaderArea);
 
-    if (showPropertyPanel) {
+    renderer.setDrawColor(255, 255, 255, 255);
+    renderer.drawText("Tiles", palettePanelHeaderArea.x + 10, palettePanelHeaderArea.y + 8);
+    renderer.drawText("Layers", layersPanelHeaderArea.x + 10, layersPanelHeaderArea.y + 8);
+    renderer.drawText("Tools", toolsPanelHeaderArea.x + 10, toolsPanelHeaderArea.y + 8);
+    renderer.drawText("Properties", propertiesPanelHeaderArea.x + 10, propertiesPanelHeaderArea.y + 8);
+
+    if (palettePanelExpanded) {
+        renderPalette(renderer);
+    }
+
+    if (layersPanelExpanded) {
+        renderLayerButtons(renderer);
+    }
+
+    if (toolsPanelExpanded) {
+        renderToolButtons(renderer);
+    }
+
+    if (propertiesPanelExpanded) {
         renderPropertyPanel(renderer);
     }
 
@@ -354,7 +466,7 @@ void MapEditor::render(Renderer& renderer) {
         renderMapBrowser(renderer);
     }
 
-    drawUIBounds(renderer);
+     //drawUIBounds(renderer);
 }
 
 void MapEditor::renderPalette(Renderer& renderer) {
@@ -362,7 +474,7 @@ void MapEditor::renderPalette(Renderer& renderer) {
     renderer.fillRect(paletteArea);
 
     renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Tile Palette", paletteArea.x + 10, paletteArea.y + 5);
+    renderer.drawText("Available Tiles", paletteArea.x + 10, paletteArea.y + 5);
 
     for (size_t i = 0; i < availableTiles.size(); i++) {
         int y = paletteArea.y + 30 + i * 30;
@@ -382,28 +494,31 @@ void MapEditor::renderLayerButtons(Renderer& renderer) {
     renderer.fillRect(layerButtonsArea);
 
     renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Layers", layerButtonsArea.x + 10, layerButtonsArea.y + 5);
+    renderer.drawText("Select Layer", layerButtonsArea.x + 10, layerButtonsArea.y + 5);
 
+    SDL_Rect groundRect = {layerButtonsArea.x + 5, layerButtonsArea.y + 30, layerButtonsArea.w - 10, 25};
     if (currentLayer == EditorLayer::GROUND) {
         renderer.setDrawColor(100, 100, 255, 200);
-        renderer.fillRect(layerButtonsArea.x + 5, layerButtonsArea.y + 30, layerButtonsArea.w - 10, 20);
+        renderer.fillRect(groundRect);
     }
     renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Ground (Q)", layerButtonsArea.x + 10, layerButtonsArea.y + 35);
+    renderer.drawText("Ground (Q)", groundRect.x + 10, groundRect.y + 5);
 
+    SDL_Rect objectsRect = {layerButtonsArea.x + 5, layerButtonsArea.y + 60, layerButtonsArea.w - 10, 25};
     if (currentLayer == EditorLayer::OBJECTS) {
         renderer.setDrawColor(100, 100, 255, 200);
-        renderer.fillRect(layerButtonsArea.x + 5, layerButtonsArea.y + 55, layerButtonsArea.w - 10, 20);
+        renderer.fillRect(objectsRect);
     }
     renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Objects (W)", layerButtonsArea.x + 10, layerButtonsArea.y + 60);
+    renderer.drawText("Objects (W)", objectsRect.x + 10, objectsRect.y + 5);
 
+    SDL_Rect collisionRect = {layerButtonsArea.x + 5, layerButtonsArea.y + 90, layerButtonsArea.w - 10, 25};
     if (currentLayer == EditorLayer::COLLISION) {
         renderer.setDrawColor(100, 100, 255, 200);
-        renderer.fillRect(layerButtonsArea.x + 5, layerButtonsArea.y + 80, layerButtonsArea.w - 10, 20);
+        renderer.fillRect(collisionRect);
     }
     renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Collision (E)", layerButtonsArea.x + 10, layerButtonsArea.y + 85);
+    renderer.drawText("Collision (E)", collisionRect.x + 10, collisionRect.y + 5);
 }
 
 void MapEditor::renderToolButtons(Renderer& renderer) {
@@ -411,28 +526,31 @@ void MapEditor::renderToolButtons(Renderer& renderer) {
     renderer.fillRect(toolButtonsArea);
 
     renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Tools", toolButtonsArea.x + 10, toolButtonsArea.y + 5);
+    renderer.drawText("Select Tool", toolButtonsArea.x + 10, toolButtonsArea.y + 5);
 
+    SDL_Rect pencilRect = {toolButtonsArea.x + 5, toolButtonsArea.y + 30, toolButtonsArea.w - 10, 25};
     if (currentTool == EditorTool::PENCIL) {
         renderer.setDrawColor(100, 100, 255, 200);
-        renderer.fillRect(toolButtonsArea.x + 5, toolButtonsArea.y + 30, toolButtonsArea.w - 10, 20);
+        renderer.fillRect(pencilRect);
     }
     renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Pencil (1)", toolButtonsArea.x + 10, toolButtonsArea.y + 35);
+    renderer.drawText("Pencil (1)", pencilRect.x + 10, pencilRect.y + 5);
 
+    SDL_Rect eraserRect = {toolButtonsArea.x + 5, toolButtonsArea.y + 60, toolButtonsArea.w - 10, 25};
     if (currentTool == EditorTool::ERASER) {
         renderer.setDrawColor(100, 100, 255, 200);
-        renderer.fillRect(toolButtonsArea.x + 5, toolButtonsArea.y + 55, toolButtonsArea.w - 10, 20);
+        renderer.fillRect(eraserRect);
     }
     renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Eraser (2)", toolButtonsArea.x + 10, toolButtonsArea.y + 60);
+    renderer.drawText("Eraser (2)", eraserRect.x + 10, eraserRect.y + 5);
 
+    SDL_Rect propRect = {toolButtonsArea.x + 5, toolButtonsArea.y + 90, toolButtonsArea.w - 10, 25};
     if (currentTool == EditorTool::PROPERTY_EDITOR) {
         renderer.setDrawColor(100, 100, 255, 200);
-        renderer.fillRect(toolButtonsArea.x + 5, toolButtonsArea.y + 80, toolButtonsArea.w - 10, 20);
+        renderer.fillRect(propRect);
     }
     renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Properties (3)", toolButtonsArea.x + 10, toolButtonsArea.y + 85);
+    renderer.drawText("Properties (3)", propRect.x + 10, propRect.y + 5);
 }
 
 void MapEditor::renderPropertyPanel(Renderer& renderer) {
@@ -449,25 +567,38 @@ void MapEditor::renderPropertyPanel(Renderer& renderer) {
 
     if (tile) {
         renderer.setDrawColor(255, 255, 255, 255);
+
         renderer.drawText("Walkable:", propertiesArea.x + 10, propertiesArea.y + 35);
 
-        bool isWalkable = tile->getProperty("walkable", false);
-        std::string walkableValue = isWalkable ? "true" : "false";
+        bool isWalkable = tile->getProperty("walkable", true);
 
-        if (editingProperty == "walkable" && editingPropertyValue) {
-            renderer.setDrawColor(100, 100, 255, 200);
-            renderer.fillRect(propertiesArea.x + 100, propertiesArea.y + 30, 70, 20);
+        SDL_Rect toggleRect = {
+            propertiesArea.x + 100,
+            propertiesArea.y + 32,
+            40,
+            20
+        };
+
+        if (isWalkable) {
+            renderer.setDrawColor(0, 200, 0, 255);
+        } else {
+            renderer.setDrawColor(200, 0, 0, 255);
         }
 
+        renderer.fillRect(toggleRect);
+
         renderer.setDrawColor(255, 255, 255, 255);
-        renderer.drawText(walkableValue, propertiesArea.x + 110, propertiesArea.y + 35);
+        renderer.drawText(isWalkable ? "True" : "False", toggleRect.x + 5, toggleRect.y + 3);
 
-        renderer.drawText("Texture:", propertiesArea.x + 10, propertiesArea.y + 65);
+        std::string posText = "Position: " + std::to_string(gridX) + "," + std::to_string(gridY);
+        renderer.drawText(posText, propertiesArea.x + 10, propertiesArea.y + 65);
+
+        renderer.drawText("Texture:", propertiesArea.x + 10, propertiesArea.y + 95);
         std::string textureID = tile->getProperty<std::string>("textureID", "none");
-        renderer.drawText(textureID, propertiesArea.x + 110, propertiesArea.y + 65);
+        renderer.drawText(textureID, propertiesArea.x + 80, propertiesArea.y + 95);
 
-        renderer.drawText("Click to edit", propertiesArea.x + 10, propertiesArea.y + 140);
-        renderer.drawText("Right-click to close", propertiesArea.x + 10, propertiesArea.y + 160);
+        renderer.drawText("Click to toggle walkable", propertiesArea.x + 10, propertiesArea.y + 140);
+        renderer.drawText("Right-click to close panel", propertiesArea.x + 10, propertiesArea.y + 160);
     }
 }
 
@@ -625,27 +756,7 @@ bool MapEditor::loadMap(const std::string& filename) {
 }
 
 void MapEditor::refreshMapList() {
-    availableMaps.clear();
-
-    // maybe here scan a directory?
-    availableMaps.push_back("default");
-    availableMaps.push_back("city");
-    availableMaps.push_back("arena");
-
-    /*
-    DIR* dir;
-    struct dirent* ent;
-    if ((dir = opendir("maps/")) != NULL) {
-        while ((ent = readdir(dir)) != NULL) {
-            std::string filename = ent->d_name;
-            if (filename.length() > 5 &&
-                filename.substr(filename.length() - 5) == ".json") {
-                availableMaps.push_back(filename.substr(0, filename.length() - 5));
-            }
-        }
-        closedir(dir);
-    }
-    */
+    scanMapDirectory();
 }
 
 std::string MapEditor::getMapPath(const std::string& mapName) {
@@ -675,4 +786,30 @@ void MapEditor::drawUIBounds(Renderer& renderer) {
     renderer.drawRect(loadButtonArea);
 
     renderer.setDrawColor(r, g, b, a);
+}
+
+void MapEditor::scanMapDirectory() {
+    availableMaps.clear();
+
+    try {
+        std::filesystem::create_directories("maps");
+
+        for (const auto& entry : std::filesystem::directory_iterator("maps")) {
+            if (entry.path().extension() == ".json") {
+                std::string filename = entry.path().stem().string();
+                availableMaps.push_back(filename);
+            }
+        }
+
+        if (availableMaps.empty()) {
+            availableMaps.push_back("default");
+            availableMaps.push_back("city");
+            availableMaps.push_back("arena");
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error scanning maps directory: " << e.what() << std::endl;
+        availableMaps.push_back("default");
+        availableMaps.push_back("city");
+        availableMaps.push_back("arena");
+    }
 }

@@ -93,6 +93,18 @@ private:
     std::string getMapPath(const std::string& mapName);
 
     void drawUIBounds(Renderer& renderer);
+
+    bool palettePanelExpanded;
+    bool layersPanelExpanded;
+    bool toolsPanelExpanded;
+    bool propertiesPanelExpanded;
+
+    SDL_Rect palettePanelHeaderArea;
+    SDL_Rect layersPanelHeaderArea;
+    SDL_Rect toolsPanelHeaderArea;
+    SDL_Rect propertiesPanelHeaderArea;
+
+    void scanMapDirectory();
 };
 
 #endif // MAP_EDITOR_H

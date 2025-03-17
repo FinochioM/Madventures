@@ -31,11 +31,11 @@ bool Game::initialize() {
     currentCity = "city";
     currentArena = "arena";
 
+    std::filesystem::create_directories("maps");
+
     bool cityLoaded = loadMap(currentCity);
     if (!cityLoaded) {
         std::cout << "No city map found. Use the editor to create one." << std::endl;
-
-        std::filesystem::create_directories("maps");
 
         switchToEditor();
         mapEditor->saveMap("maps/city.json");
@@ -47,6 +47,7 @@ bool Game::initialize() {
     placePlayerInValidPosition();
     return true;
 }
+
 
 void Game::placePlayerInValidPosition() {
     for (int y = 0; y < tileMap->getGridHeight(); y++) {
