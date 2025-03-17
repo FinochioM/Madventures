@@ -65,6 +65,7 @@ private:
     void renderEditor(Renderer& renderer);
 
     void renderMovementRange(Renderer& renderer);
+    void placePlayerInValidPosition();
 };
 
 #endif // GAME_H

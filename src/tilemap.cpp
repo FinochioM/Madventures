@@ -37,67 +37,17 @@ void TileMap::initialize() {
         for (int x = 0; x < gridWidth; x++) {
             tiles[y][x] = new Tile(x, y);
 
-            // default properties should go here ...
-            // maybe like tiles[y][x]->setProperty("name", value);
+            tiles[y][x]->setProperty("walkable", true);
 
-            bool isWalkable = true;
-
-            // border
-            if (x == 0 || y == 0 || x == gridWidth - 1 || y == gridHeight - 1) {
-                isWalkable = false;
-            }
-
-            if ((x >= 5 && x <= 7 && y >= 5 && y <= 7) ||
-                (x >= 15 && x <= 17 && y >= 5 && y <= 7)) {
-                    isWalkable = false; //? ??? ?
-                }
-
-            tiles[y][x]->setProperty("walkable", isWalkable);
-
-            std::string textureID = isWalkable ? "tile_grass" : "tile_wall";
-            tiles[y][x]->setProperty("textureID", textureID);
+            tiles[y][x]->setProperty("textureID", "tile_grass");
         }
     }
 
-    std::cout << "TileMap initialized with " << gridWidth << "x" << gridHeight << " tiles (" << tileSize << "px each)" << std::endl;
+    std::cout << "Empty TileMap initialized with " << gridWidth << "x" << gridHeight << " tiles (" << tileSize << "px each)" << std::endl;
 }
 
 void TileMap::render(Renderer& renderer) {
-    for (int y = 0; y < gridHeight; y++) {
-        for (int x = 0; x < gridWidth; x++) {
-            std::string textureID = tiles[y][x]->getProperty<std::string>("textureID", "");
 
-            int pixelX, pixelY;
-            gridToPixel(x, y, pixelX, pixelY);
-
-            if (!textureID.empty()) {
-                renderer.renderTexture(textureID, pixelX, pixelY, tileSize, tileSize);
-            } else {
-                bool isWalkable = tiles[y][x]->getProperty("walkable", false);
-                if (isWalkable) {
-                    renderer.setDrawColor(60, 100, 60, 255);
-                }else {
-                    renderer.setDrawColor(100, 60, 60, 255);
-                }
-
-                renderer.fillRect(pixelX, pixelY, tileSize, tileSize);
-            }
-        }
-    }
-
-    /*
-    renderer.setDrawColor(50, 50, 50, 255);
-
-    for (int y = 0; y <= gridHeight; y++) {
-        int pixelY = y * tileSize;
-        renderer.drawRect(0, pixelY, windowWidth, 1);
-    }
-
-    for (int x = 0; x <= gridWidth; x++) {
-        int pixelX = x * tileSize;
-        renderer.drawRect(pixelX, 0, 1, windowHeight);
-    }
-    */
 
     // i could render different tiles here depending on their properties, dont know how tho.
 }

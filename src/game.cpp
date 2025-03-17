@@ -1,6 +1,6 @@
 #include "game.h"
 #include <iostream>
-
+#include <fstream>
 
 Game::Game() : currentState(GameState::CITY), isRunning(true), mouseX(0), mouseY(0), score(0), movesRemaining(10), playerSelected(false) {
     //arenaButton = {350, 400, 100, 50};
@@ -27,29 +27,40 @@ Game::~Game() {
 bool Game::initialize() {
     tileMap->initialize();
 
-    int playerGridX, playerGridY;
-    tileMap->pixelToGrid(player->getX(), player->getY(), playerGridX, playerGridY);
+    bool mapLoaded = false;
+    if (mapEditor) {
+        mapLoaded = mapEditor->loadMap("map.json");
+        if (mapLoaded) {
+            std::cout << "Successfully loaded map from file." << std::endl;
+        } else {
+            std::cout << "No map file found or error loading map. Using empty map." << std::endl;
+        }
+    }
 
-    if (!tileMap->isWalkable(playerGridX, playerGridY)) {
-        for (int y = 0; y < tileMap->getGridHeight(); y++) {
-            for (int x = 0; x < tileMap->getGridWidth(); x++) {
-                if (tileMap->isWalkable(x, y)) {
-                    int pixelX, pixelY;
-                    tileMap->gridToPixel(x, y, pixelX, pixelY);
+    placePlayerInValidPosition();
+    return true;
+}
 
-                    int halfTileSize = tileMap->getTileSize() / 2;
-                    pixelX += halfTileSize;
-                    pixelY += halfTileSize;
+void Game::placePlayerInValidPosition() {
+    for (int y = 0; y < tileMap->getGridHeight(); y++) {
+        for (int x = 0; x < tileMap->getGridWidth(); x++) {
+            if (tileMap->isWalkable(x, y)) {
+                int pixelX, pixelY;
+                tileMap->gridToPixel(x, y, pixelX, pixelY);
 
-                    player->setX(pixelX - player->getCollider().w / 2);
-                    player->setY(pixelY - player->getCollider().h / 2);
-                    break;
-                }
+                pixelX += tileMap->getTileSize() / 2 - player->getCollider().w / 2;
+                pixelY += tileMap->getTileSize() / 2 - player->getCollider().h / 2;
+
+                player->setX(pixelX);
+                player->setY(pixelY);
+                return;
             }
         }
     }
 
-    return true;
+    player->setX(tileMap->getTileSize());
+    player->setY(tileMap->getTileSize());
+    std::cout << "Warning: No walkable tiles found for player placement." << std::endl;
 }
 
 bool Game::loadAssets(Renderer& renderer) {
@@ -201,24 +212,26 @@ void Game::render(Renderer& renderer) {
     switch (currentState) {
         case GameState::CITY:
             renderCity(renderer);
+            tileMap->render(renderer);
+            renderMovementRange(renderer);
+            for (auto entity : entities) {
+                entity->render(renderer);
+            }
+            player->render(renderer);
             break;
         case GameState::ARENA:
             renderArena(renderer);
+            tileMap->render(renderer);
+            renderMovementRange(renderer);
+            for (auto entity : entities) {
+                entity->render(renderer);
+            }
+            player->render(renderer);
             break;
         case GameState::EDITOR:
             renderEditor(renderer);
             break;
     }
-
-    tileMap->render(renderer);
-
-    renderMovementRange(renderer);
-
-    for (auto entity : entities) {
-        entity->render(renderer);
-    }
-
-    player->render(renderer);
 }
 
 void Game::renderCity(Renderer& renderer) {
@@ -262,17 +275,28 @@ void Game::renderEditor(Renderer& renderer) {
 
 void Game::switchToCity() {
     currentState = GameState::CITY;
+    mapEditor->setActive(false);
     std::cout << "Switched to city" << std::endl;
 }
 
 void Game::switchToArena() {
     currentState = GameState::ARENA;
+    mapEditor->setActive(false);
     movesRemaining = 10;
     std::cout << "Switched to arena" << std::endl;
 }
 
 void Game::switchToEditor() {
     currentState = GameState::EDITOR;
+    mapEditor->setActive(true);
+
+    std::ifstream mapCheck("map.json");
+    if (!mapCheck.good()) {
+        mapEditor->saveMap("map.json");
+        std::cout << "Created default map file." << std::endl;
+    }
+    mapCheck.close();
+
     std::cout << "Switched to editor" << std::endl;
 }
 
