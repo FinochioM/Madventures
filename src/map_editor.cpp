@@ -68,7 +68,7 @@ void MapEditor::initializeAvailableTiles() {
     availableTiles.push_back({"border_grass", "Border Grass", false});
     availableTiles.push_back({"border_path", "Border Path", false});
     availableTiles.push_back({"border_water", "Border Water", false});
-    // Add more tiles as needed
+    // Add more tiles as needed lol
 }
 
 void MapEditor::handleEvent(SDL_Event& e) {
