@@ -14,8 +14,8 @@
 #undef main
 #endif
 
-const int SCREEN_WIDTH = 800;
-const int SCREEN_HEIGHT = 600;
+const int SCREEN_WIDTH = 1024;
+const int SCREEN_HEIGHT = 768;
 const int FPS = 60;
 const int FRAME_DELAY = 1000 / FPS;
 

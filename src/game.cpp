@@ -9,7 +9,7 @@ Game::Game() : currentState(GameState::CITY), isRunning(true), mouseX(0), mouseY
     arenaButton = {350, 400, 100, 50};
     editorButton = {460, 400, 100, 50};
 
-    tileMap = new TileMap(32, 800, 600);
+    tileMap = new TileMap(32, 1024, 768);
     mapEditor = new MapEditor(tileMap);
 
     player = new Player(0, 0);
@@ -30,7 +30,7 @@ Game::~Game() {
 bool Game::initialize() {
     tileMap->initialize();
 
-    currentCity = "default";
+    currentCity = "city";
     currentArena = "arena";
 
     std::filesystem::create_directories("maps");
@@ -40,7 +40,7 @@ bool Game::initialize() {
         std::cout << "No city map found. Use the editor to create one." << std::endl;
 
         switchToEditor();
-        mapEditor->saveMap("maps/default.json");
+        mapEditor->saveMap("maps/city.json");
         mapEditor->saveMap("maps/arena.json");
 
         loadMap(currentCity);
@@ -315,7 +315,7 @@ void Game::renderArena(Renderer& renderer) {
 
 void Game::renderEditor(Renderer& renderer) {
     renderer.setDrawColor(100, 100, 100, 255);
-    renderer.fillRect(0, 0, 800, 600);
+    renderer.fillRect(0, 0, 1024, 768);
 
     tileMap->render(renderer);
     mapEditor->render(renderer);
