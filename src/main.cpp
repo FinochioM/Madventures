@@ -19,16 +19,6 @@ const int SCREEN_HEIGHT = 600;
 const int FPS = 60;
 const int FRAME_DELAY = 1000 / FPS;
 
-void SaveOpenGLState() {
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
-    glPushMatrix();
-}
-
-void RestoreOpenGLState() {
-    glPopMatrix();
-    glPopAttrib();
-}
-
 int main(int argc, char* argv[]) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cout << "SDL could not be initialized! SDL_Error: " << SDL_GetError() << std::endl;
@@ -78,7 +68,7 @@ int main(int argc, char* argv[]) {
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
 
-    ImGui_ImplSDL2_InitForSDLRenderer2(window, renderer);
+    ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer2_Init(renderer);
 
     ImGui::StyleColorsDark();
@@ -137,9 +127,9 @@ int main(int argc, char* argv[]) {
         game.render(gameRenderer);
 
         ImGui::Render();
-        ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
+        ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
 
-        gameRenderer.present(renderer);
+        gameRenderer.present();
 
         frameTime = SDL_GetTicks() - frameStart;
         if (frameTime < FRAME_DELAY) {

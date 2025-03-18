@@ -58,8 +58,9 @@ bool Game::initializeImGui() {
 
     ImGui::StyleColorsDark();
 
-    ImGui_ImplSDL2_InitForOpenGL(window, glContext);
-    ImGui_ImplOpenGL3_Init("#version 130");
+    SDL_Renderer* renderer = SDL_GetRenderer(window);
+    ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
+    ImGui_ImplSDLRenderer2_Init(renderer);
 
     imguiInitialized = true;
     return true;
@@ -398,7 +399,7 @@ void Game::setCurrentArena(const std::string& arenaName) {
 
 void Game::shutdownImGui() {
     if (imguiInitialized) {
-        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplSDLRenderer2_Shutdown();
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
         imguiInitialized = false;
