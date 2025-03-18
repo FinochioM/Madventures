@@ -43,13 +43,14 @@ int main(int argc, char* argv[]) {
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
     SDL_Window* window = SDL_CreateWindow("MakisAdventures",
-                                            SDL_WINDOWPOS_UNDEFINED,
-                                            SDL_WINDOWPOS_UNDEFINED,
-                                            SCREEN_WIDTH,
-                                            SCREEN_HEIGHT,
-                                            SDL_WINDOW_SHOWN);
+                                          SDL_WINDOWPOS_UNDEFINED,
+                                          SDL_WINDOWPOS_UNDEFINED,
+                                          SCREEN_WIDTH,
+                                          SCREEN_HEIGHT,
+                                          SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
 
     if (!window) {
         std::cout << "Window could not be created! SDL_Error " << SDL_GetError() << std::endl;
