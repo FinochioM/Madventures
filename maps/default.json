@@ -1299,22 +1299,22 @@
         },
         {
             "objectTexture": "",
-            "textureID": "tile_grass",
-            "walkable": true,
+            "textureID": "tile_wall",
+            "walkable": false,
             "x": 10,
             "y": 7
         },
         {
             "objectTexture": "",
-            "textureID": "tile_grass",
-            "walkable": true,
+            "textureID": "tile_wall",
+            "walkable": false,
             "x": 11,
             "y": 7
         },
         {
             "objectTexture": "",
-            "textureID": "tile_grass",
-            "walkable": true,
+            "textureID": "tile_wall",
+            "walkable": false,
             "x": 12,
             "y": 7
         },
@@ -1474,49 +1474,49 @@
         },
         {
             "objectTexture": "",
-            "textureID": "tile_grass",
-            "walkable": true,
+            "textureID": "tile_wall",
+            "walkable": false,
             "x": 10,
             "y": 8
         },
         {
             "objectTexture": "",
-            "textureID": "",
+            "textureID": "tile_wall",
             "walkable": false,
             "x": 11,
             "y": 8
         },
         {
             "objectTexture": "",
-            "textureID": "",
+            "textureID": "tile_wall",
             "walkable": false,
             "x": 12,
             "y": 8
         },
         {
             "objectTexture": "",
-            "textureID": "",
-            "walkable": false,
+            "textureID": "tile_grass",
+            "walkable": true,
             "x": 13,
             "y": 8
         },
         {
             "objectTexture": "",
-            "textureID": "",
+            "textureID": "tile_wall",
             "walkable": false,
             "x": 14,
             "y": 8
         },
         {
             "objectTexture": "",
-            "textureID": "",
+            "textureID": "tile_wall",
             "walkable": false,
             "x": 15,
             "y": 8
         },
         {
             "objectTexture": "",
-            "textureID": "tile_grass",
+            "textureID": "tile_wall",
             "walkable": false,
             "x": 16,
             "y": 8
@@ -1656,42 +1656,42 @@
         },
         {
             "objectTexture": "",
-            "textureID": "",
-            "walkable": false,
+            "textureID": "tile_grass",
+            "walkable": true,
             "x": 11,
             "y": 9
         },
         {
             "objectTexture": "",
-            "textureID": "",
-            "walkable": false,
+            "textureID": "tile_grass",
+            "walkable": true,
             "x": 12,
             "y": 9
         },
         {
             "objectTexture": "",
-            "textureID": "",
-            "walkable": false,
+            "textureID": "tile_grass",
+            "walkable": true,
             "x": 13,
             "y": 9
         },
         {
             "objectTexture": "",
-            "textureID": "",
+            "textureID": "tile_wall",
             "walkable": false,
             "x": 14,
             "y": 9
         },
         {
             "objectTexture": "",
-            "textureID": "",
+            "textureID": "tile_wall",
             "walkable": false,
             "x": 15,
             "y": 9
         },
         {
             "objectTexture": "",
-            "textureID": "tile_grass",
+            "textureID": "tile_wall",
             "walkable": false,
             "x": 16,
             "y": 9

@@ -2034,15 +2034,15 @@
         },
         {
             "objectTexture": "",
-            "textureID": "tile_grass",
-            "walkable": true,
+            "textureID": "base_limit",
+            "walkable": false,
             "x": 15,
             "y": 11
         },
         {
             "objectTexture": "",
-            "textureID": "tile_grass",
-            "walkable": true,
+            "textureID": "base_limit",
+            "walkable": false,
             "x": 16,
             "y": 11
         },
@@ -2209,15 +2209,15 @@
         },
         {
             "objectTexture": "",
-            "textureID": "tile_grass",
-            "walkable": true,
+            "textureID": "base_limit",
+            "walkable": false,
             "x": 15,
             "y": 12
         },
         {
             "objectTexture": "",
-            "textureID": "tile_grass",
-            "walkable": true,
+            "textureID": "base_limit",
+            "walkable": false,
             "x": 16,
             "y": 12
         },
@@ -2384,15 +2384,15 @@
         },
         {
             "objectTexture": "",
-            "textureID": "tile_grass",
-            "walkable": true,
+            "textureID": "base_limit",
+            "walkable": false,
             "x": 15,
             "y": 13
         },
         {
             "objectTexture": "",
-            "textureID": "tile_grass",
-            "walkable": true,
+            "textureID": "base_limit",
+            "walkable": false,
             "x": 16,
             "y": 13
         },

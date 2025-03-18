@@ -30,7 +30,7 @@ Game::~Game() {
 bool Game::initialize() {
     tileMap->initialize();
 
-    currentCity = "city";
+    currentCity = "default";
     currentArena = "arena";
 
     std::filesystem::create_directories("maps");
@@ -40,7 +40,7 @@ bool Game::initialize() {
         std::cout << "No city map found. Use the editor to create one." << std::endl;
 
         switchToEditor();
-        mapEditor->saveMap("maps/city.json");
+        mapEditor->saveMap("maps/default.json");
         mapEditor->saveMap("maps/arena.json");
 
         loadMap(currentCity);
@@ -124,7 +124,6 @@ bool Game::loadAssets(Renderer& renderer) {
     if (!renderer.loadTexture("border_water", "assets/border_water.png")){
         std::cout << "Warning: Tile Wall sprite not found. Using placeholder." << std::endl;
     }
-
 
     return true;
 }
