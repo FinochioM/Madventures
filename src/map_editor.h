@@ -6,6 +6,7 @@
 #include <string>
 #include "tilemap.h"
 #include "renderer.h"
+#include "imgui/imgui.h"
 
 enum class EditorTool {
     PENCIL,
@@ -62,55 +63,40 @@ private:
     bool editingPropertyValue;
 
     void initializeAvailableTiles();
-    void renderPalette(Renderer& renderer);
-    void renderLayerButtons(Renderer& renderer);
-    void renderToolButtons(Renderer& renderer);
-    void renderPropertyPanel(Renderer& renderer);
-
-    void handleLeftClick(int mouseX, int mouseY);
-    void handleRightClick(int mouseX, int mouseY);
+    void renderImGuiInterface();
+    void renderToolsPanel();
+    void renderLayersPanel();
+    void renderTilePalette();
+    void renderPropertiesPanel();
+    void renderMapBrowser();
+    void renderStatusBar();
 
     void applyTileAtPosition(int gridX, int gridY);
     void eraseTileAtPosition(int gridX, int gridY);
     void openPropertyEditor(int gridX, int gridY);
 
-    bool isPointInRect(int x, int y, const SDL_Rect& rect) const;
-
     std::string currentMapName;
     std::vector<std::string> availableMaps;
     bool showMapBrowser;
-    std::string inputMapName;
+    char inputMapNameBuffer[256];
     bool isNamingMap;
     bool isSelectingMap;
 
-    SDL_Rect saveButtonArea;
-    SDL_Rect loadButtonArea;
-    SDL_Rect inputArea;
-    SDL_Rect mapListArea;
-
-    void renderMapBrowser(Renderer& renderer);
     void refreshMapList();
     std::string getMapPath(const std::string& mapName);
-
-    void drawUIBounds(Renderer& renderer);
-
-    bool palettePanelExpanded;
-    bool layersPanelExpanded;
-    bool toolsPanelExpanded;
-    bool propertiesPanelExpanded;
-
-    SDL_Rect palettePanelHeaderArea;
-    SDL_Rect layersPanelHeaderArea;
-    SDL_Rect toolsPanelHeaderArea;
-    SDL_Rect propertiesPanelHeaderArea;
-
     void scanMapDirectory();
 
     int selectedTileX;
     int selectedTileY;
     bool hasTileSelected;
 
-    bool isPointOverAnyPanel(int x, int y) const;
+    bool showDemoWindow;
+    bool showAboutWindow;
+    bool showMetricsWindow;
+    ImVec4 gridColor;
+    ImVec4 selectedTileColor;
+    ImVec4 cursorColor;
+    float gridOpacity;
 };
 
 #endif // MAP_EDITOR_H

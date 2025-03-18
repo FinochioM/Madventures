@@ -1,7 +1,9 @@
 #include "map_editor.h"
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 #include <json.hpp>
+#include "imgui/imgui.h"
 
 MapEditor::MapEditor(TileMap* tileMap) :
     tileMap(tileMap),
@@ -19,37 +21,18 @@ MapEditor::MapEditor(TileMap* tileMap) :
     showMapBrowser(false),
     isNamingMap(false),
     isSelectingMap(false),
-    inputMapName(""),
-    palettePanelExpanded(false),
-    layersPanelExpanded(false),
-    toolsPanelExpanded(false),
-    propertiesPanelExpanded(false),
     hasTileSelected(false),
     selectedTileX(0),
-    selectedTileY(0) {
+    selectedTileY(0),
+    showDemoWindow(false),
+    showAboutWindow(false),
+    showMetricsWindow(false),
+    gridColor(0.3f, 0.3f, 0.3f, 0.5f),
+    selectedTileColor(0.0f, 1.0f, 1.0f, 0.6f),
+    cursorColor(1.0f, 1.0f, 0.0f, 0.4f),
+    gridOpacity(0.5f) {
 
-    int headerWidth = 150;
-    int headerHeight = 30;
-    int headerY = 10;
-
-    palettePanelHeaderArea = {20, headerY, headerWidth, headerHeight};
-    layersPanelHeaderArea = {20 + headerWidth + 10, headerY, headerWidth, headerHeight};
-    toolsPanelHeaderArea = {20 + (headerWidth + 10) * 2, headerY, headerWidth, headerHeight};
-    propertiesPanelHeaderArea = {20 + (headerWidth + 10) * 3, headerY, headerWidth, headerHeight};
-
-    int panelWidth = 180;
-    int panelHeight = 200;
-    int panelY = headerY + headerHeight + 5;
-
-    paletteArea = {palettePanelHeaderArea.x, panelY, panelWidth, panelHeight};
-    layerButtonsArea = {layersPanelHeaderArea.x, panelY, panelWidth, panelHeight};
-    toolButtonsArea = {toolsPanelHeaderArea.x, panelY, panelWidth, panelHeight};
-    propertiesArea = {propertiesPanelHeaderArea.x, panelY, panelWidth, panelHeight};
-
-    saveButtonArea = {20, 560, 100, 30};
-    loadButtonArea = {130, 560, 100, 30};
-    inputArea = {250, 250, 300, 50};
-    mapListArea = {250, 310, 300, 200};
+    strcpy(inputMapNameBuffer, currentMapName.c_str());
 
     initializeAvailableTiles();
     refreshMapList();
@@ -68,7 +51,6 @@ void MapEditor::initializeAvailableTiles() {
     availableTiles.push_back({"border_grass", "Border Grass", false});
     availableTiles.push_back({"border_path", "Border Path", false});
     availableTiles.push_back({"border_water", "Border Water", false});
-    // Add more tiles as needed lol
 }
 
 void MapEditor::handleEvent(SDL_Event& e) {
@@ -79,316 +61,371 @@ void MapEditor::handleEvent(SDL_Event& e) {
         tileMap->pixelToGrid(mouseX, mouseY, gridX, gridY);
     }
 
-    if (showMapBrowser) {
-        if (e.type == SDL_KEYDOWN) {
-            if (isNamingMap) {
-                if (e.key.keysym.sym == SDLK_RETURN) {
-                    if (!inputMapName.empty()) {
-                        currentMapName = inputMapName;
-                        saveMap(getMapPath(currentMapName));
-                        showMapBrowser = false;
-                        isNamingMap = false;
-                    }
-                } else if (e.key.keysym.sym == SDLK_ESCAPE) {
-                    showMapBrowser = false;
-                    isNamingMap = false;
-                } else if (e.key.keysym.sym == SDLK_BACKSPACE) {
-                    if (!inputMapName.empty()) {
-                        inputMapName.pop_back();
-                    }
-                } else if (e.key.keysym.sym >= SDLK_a && e.key.keysym.sym <= SDLK_z ||
-                           e.key.keysym.sym >= SDLK_0 && e.key.keysym.sym <= SDLK_9 ||
-                           e.key.keysym.sym == SDLK_UNDERSCORE) {
-                    char c = (e.key.keysym.sym >= SDLK_a && e.key.keysym.sym <= SDLK_z) ?
-                            'a' + (e.key.keysym.sym - SDLK_a) :
-                            (e.key.keysym.sym >= SDLK_0 && e.key.keysym.sym <= SDLK_9) ?
-                            '0' + (e.key.keysym.sym - SDLK_0) : '_';
-
-                    if (e.key.keysym.mod & KMOD_SHIFT && c >= 'a' && c <= 'z') {
-                        c = 'A' + (c - 'a');
-                    }
-
-                    inputMapName += c;
-                }
-            }
-            else if (isSelectingMap) {
-                if (e.key.keysym.sym == SDLK_ESCAPE) {
-                    showMapBrowser = false;
-                    isSelectingMap = false;
-                }
-            }
-        }
-        else if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
-            if (isSelectingMap) {
-                int relativeY = mouseY - mapListArea.y;
-                int mapIndex = relativeY / 30;
-
-                if (mouseX >= mapListArea.x && mouseX < mapListArea.x + mapListArea.w &&
-                    relativeY >= 0 && mapIndex < availableMaps.size()) {
-                    currentMapName = availableMaps[mapIndex];
-                    loadMap(getMapPath(currentMapName));
-                    showMapBrowser = false;
-                    isSelectingMap = false;
-                }
-            }
-        }
-
-        return;
-    }
-
     if (e.type == SDL_MOUSEBUTTONDOWN) {
-        if (e.button.button == SDL_BUTTON_LEFT) {
-            if (isPointInRect(mouseX, mouseY, palettePanelHeaderArea)) {
-                bool wasExpanded = palettePanelExpanded;
-                palettePanelExpanded = false;
-                layersPanelExpanded = false;
-                toolsPanelExpanded = false;
-                propertiesPanelExpanded = false;
-                if (!wasExpanded) {
-                    palettePanelExpanded = true;
-                }
-                return;
-            }
-
-            if (isPointInRect(mouseX, mouseY, layersPanelHeaderArea)) {
-                bool wasExpanded = layersPanelExpanded;
-                palettePanelExpanded = false;
-                layersPanelExpanded = false;
-                toolsPanelExpanded = false;
-                propertiesPanelExpanded = false;
-                if (!wasExpanded) {
-                    layersPanelExpanded = true;
-                }
-                return;
-            }
-
-            if (isPointInRect(mouseX, mouseY, toolsPanelHeaderArea)) {
-                bool wasExpanded = toolsPanelExpanded;
-
-                palettePanelExpanded = false;
-                layersPanelExpanded = false;
-                toolsPanelExpanded = false;
-                propertiesPanelExpanded = false;
-                if (!wasExpanded) {
-                    toolsPanelExpanded = true;
-                }
-                return;
-            }
-
-            if (isPointInRect(mouseX, mouseY, propertiesPanelHeaderArea)) {
-                bool wasExpanded = propertiesPanelExpanded;
-                palettePanelExpanded = false;
-                layersPanelExpanded = false;
-                toolsPanelExpanded = false;
-                propertiesPanelExpanded = false;
-                if (!wasExpanded) {
-                    propertiesPanelExpanded = true;
-                }
-                return;
-            }
-
-            if (isPointInRect(mouseX, mouseY, saveButtonArea)) {
-                showMapBrowser = true;
-                isNamingMap = true;
-                isSelectingMap = false;
-                inputMapName = currentMapName;
-                return;
-            }
-
-            if (isPointInRect(mouseX, mouseY, loadButtonArea)) {
-                showMapBrowser = true;
-                isNamingMap = false;
-                isSelectingMap = true;
-                refreshMapList();
-                return;
-            }
-
-            if (isPointOverAnyPanel(mouseX, mouseY)) {
-                if (palettePanelExpanded && isPointInRect(mouseX, mouseY, paletteArea)) {
-                    int relativeY = mouseY - paletteArea.y;
-                    int tileIndex = relativeY / 30;
-
-                    if (tileIndex >= 0 && tileIndex < availableTiles.size()) {
-                        currentTileIndex = tileIndex;
+        ImGuiIO& io = ImGui::GetIO();
+        if (!io.WantCaptureMouse) {
+            if (e.button.button == SDL_BUTTON_LEFT) {
+                if (tileMap->isValidGridPosition(gridX, gridY)) {
+                    switch (currentTool) {
+                        case EditorTool::PENCIL:
+                            applyTileAtPosition(gridX, gridY);
+                            break;
+                        case EditorTool::ERASER:
+                            eraseTileAtPosition(gridX, gridY);
+                            break;
+                        case EditorTool::PROPERTY_EDITOR:
+                            openPropertyEditor(gridX, gridY);
+                            break;
                     }
                 }
-                else if (layersPanelExpanded && isPointInRect(mouseX, mouseY, layerButtonsArea)) {
-                    int relativeY = mouseY - layerButtonsArea.y;
-                    if (relativeY < 30) {
-                        currentLayer = EditorLayer::GROUND;
-                    } else if (relativeY < 60) {
-                        currentLayer = EditorLayer::OBJECTS;
-                    } else {
-                        currentLayer = EditorLayer::COLLISION;
-                    }
-                }
-                else if (toolsPanelExpanded && isPointInRect(mouseX, mouseY, toolButtonsArea)) {
-                    int relativeY = mouseY - toolButtonsArea.y;
-                    if (relativeY < 30) {
-                        currentTool = EditorTool::PENCIL;
-                    } else if (relativeY < 60) {
-                        currentTool = EditorTool::ERASER;
-                    } else {
-                        currentTool = EditorTool::PROPERTY_EDITOR;
-                    }
-                }
-                else if (propertiesPanelExpanded && isPointInRect(mouseX, mouseY, propertiesArea)) {
-                    int relativeY = mouseY - propertiesArea.y;
-                    int propertyIndex = (relativeY - 30) / 30;
-
-                    if (propertyIndex == 0 && hasTileSelected) {
-                        Tile* tile = tileMap->getTileAt(selectedTileX, selectedTileY);
-                        if (tile) {
-                            bool isWalkable = tile->getProperty("walkable", true);
-                            tile->setProperty("walkable", !isWalkable);
-                        }
-                    }
-                }
-                return;
-            }
-
-            if (tileMap->isValidGridPosition(gridX, gridY)) {
-                switch (currentTool) {
-                    case EditorTool::PENCIL:
-                        applyTileAtPosition(gridX, gridY);
-                        break;
-                    case EditorTool::ERASER:
-                        eraseTileAtPosition(gridX, gridY);
-                        break;
-                    case EditorTool::PROPERTY_EDITOR:
-                        openPropertyEditor(gridX, gridY);
-                        break;
-                }
-            }
-        }
-        else if (e.button.button == SDL_BUTTON_RIGHT) {
-            if (propertiesPanelExpanded) {
-                propertiesPanelExpanded = false;
-                hasTileSelected = false;
             }
         }
     }
 
     if (e.type == SDL_KEYDOWN) {
-        if (showPropertyPanel && editingPropertyValue) {
-            if (e.key.keysym.sym == SDLK_RETURN) {
-                editingPropertyValue = false;
-            } else if (e.key.keysym.sym == SDLK_ESCAPE) {
-                editingPropertyValue = false;
-                editingProperty = "";
-            }
-        } else {
-            switch (e.key.keysym.sym) {
-                case SDLK_1:
-                    currentTool = EditorTool::PENCIL;
-                    break;
-                case SDLK_2:
-                    currentTool = EditorTool::ERASER;
-                    break;
-                case SDLK_3:
-                    currentTool = EditorTool::PROPERTY_EDITOR;
-                    break;
-                case SDLK_q:
-                    currentLayer = EditorLayer::GROUND;
-                    break;
-                case SDLK_w:
-                    currentLayer = EditorLayer::OBJECTS;
-                    break;
-                case SDLK_e:
-                    currentLayer = EditorLayer::COLLISION;
-                    break;
-                case SDLK_s:
-                    if (e.key.keysym.mod & KMOD_CTRL) {
-                        if (currentMapName.empty()) {
-                            showMapBrowser = true;
-                            isNamingMap = true;
-                            isSelectingMap = false;
-                            inputMapName = "default";
-                        } else {
-                            saveMap(getMapPath(currentMapName));
-                        }
-                    }
-                    break;
-                case SDLK_l:
-                    if (e.key.keysym.mod & KMOD_CTRL) {
-                        showMapBrowser = true;
-                        isNamingMap = false;
-                        isSelectingMap = true;
-                        refreshMapList();
-                    }
-                    break;
+        ImGuiIO& io = ImGui::GetIO();
+        if (!io.WantCaptureKeyboard) {
+            if (e.key.keysym.sym == SDLK_ESCAPE) {
+                hasTileSelected = false;
             }
         }
     }
 }
 
-void MapEditor::handleLeftClick(int mouseX, int mouseY) {
-    if (isPointInRect(mouseX, mouseY, paletteArea)) {
-        int relativeY = mouseY - paletteArea.y;
-        int tileIndex = relativeY / 30;
+void MapEditor::update() {
+    if (!active) return;
+}
 
-        if (tileIndex >= 0 && tileIndex < availableTiles.size()) {
-            currentTileIndex = tileIndex;
-        }
-        return;
+void MapEditor::render(Renderer& renderer) {
+    if (!active) return;
+
+    renderer.setDrawColor(
+        static_cast<Uint8>(gridColor.x * 255),
+        static_cast<Uint8>(gridColor.y * 255),
+        static_cast<Uint8>(gridColor.z * 255),
+        static_cast<Uint8>(gridColor.w * 255 * gridOpacity));
+
+    for (int y = 0; y <= tileMap->getGridHeight(); y++) {
+        renderer.drawRect(0, y * tileMap->getTileSize(), tileMap->getGridWidth() * tileMap->getTileSize(), 1);
     }
-
-    if (isPointInRect(mouseX, mouseY, layerButtonsArea)) {
-        int relativeY = mouseY - layerButtonsArea.y;
-        if (relativeY < 30) {
-            currentLayer = EditorLayer::GROUND;
-        } else if (relativeY < 60) {
-            currentLayer = EditorLayer::OBJECTS;
-        } else {
-            currentLayer = EditorLayer::COLLISION;
-        }
-        return;
-    }
-
-    if (isPointInRect(mouseX, mouseY, toolButtonsArea)) {
-        int relativeY = mouseY - toolButtonsArea.y;
-        if (relativeY < 30) {
-            currentTool = EditorTool::PENCIL;
-        } else if (relativeY < 60) {
-            currentTool = EditorTool::ERASER;
-        } else {
-            currentTool = EditorTool::PROPERTY_EDITOR;
-        }
-        return;
-    }
-
-    if (showPropertyPanel && isPointInRect(mouseX, mouseY, propertiesArea)) {
-        int relativeY = mouseY - propertiesArea.y;
-        int propertyIndex = relativeY / 30;
-
-        if (propertyIndex == 0) {
-            editingProperty = "walkable";
-            editingPropertyValue = true;
-        }
-        return;
+    for (int x = 0; x <= tileMap->getGridWidth(); x++) {
+        renderer.drawRect(x * tileMap->getTileSize(), 0, 1, tileMap->getGridHeight() * tileMap->getTileSize());
     }
 
     if (tileMap->isValidGridPosition(gridX, gridY)) {
-        switch (currentTool) {
-            case EditorTool::PENCIL:
-                applyTileAtPosition(gridX, gridY);
-                break;
-            case EditorTool::ERASER:
-                eraseTileAtPosition(gridX, gridY);
-                break;
-            case EditorTool::PROPERTY_EDITOR:
-                openPropertyEditor(gridX, gridY);
-                break;
+        int pixelX, pixelY;
+        tileMap->gridToPixel(gridX, gridY, pixelX, pixelY);
+
+        renderer.setDrawColor(
+            static_cast<Uint8>(cursorColor.x * 255),
+            static_cast<Uint8>(cursorColor.y * 255),
+            static_cast<Uint8>(cursorColor.z * 255),
+            static_cast<Uint8>(cursorColor.w * 255));
+        renderer.drawRect(pixelX, pixelY, tileMap->getTileSize(), tileMap->getTileSize());
+    }
+
+    if (hasTileSelected) {
+        int pixelX, pixelY;
+        tileMap->gridToPixel(selectedTileX, selectedTileY, pixelX, pixelY);
+
+        renderer.setDrawColor(
+            static_cast<Uint8>(selectedTileColor.x * 255),
+            static_cast<Uint8>(selectedTileColor.y * 255),
+            static_cast<Uint8>(selectedTileColor.z * 255),
+            static_cast<Uint8>(selectedTileColor.w * 255));
+        renderer.drawRect(pixelX, pixelY, tileMap->getTileSize(), tileMap->getTileSize());
+    }
+
+    renderImGuiInterface();
+}
+
+void MapEditor::renderImGuiInterface() {
+    if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("File")) {
+            if (ImGui::MenuItem("New Map")) {
+                // Handle new map creation
+            }
+            if (ImGui::MenuItem("Open Map")) {
+                showMapBrowser = true;
+                isSelectingMap = true;
+                isNamingMap = false;
+                refreshMapList();
+            }
+            if (ImGui::MenuItem("Save Map")) {
+                saveMap(getMapPath(currentMapName));
+            }
+            if (ImGui::MenuItem("Save Map As...")) {
+                showMapBrowser = true;
+                isNamingMap = true;
+                isSelectingMap = false;
+                strcpy(inputMapNameBuffer, currentMapName.c_str());
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Exit Editor")) {
+                setActive(false);
+            }
+            ImGui::EndMenu();
         }
+
+        if (ImGui::BeginMenu("Edit")) {
+            if (ImGui::MenuItem("Undo", "Ctrl+Z", false, false)) {}
+            if (ImGui::MenuItem("Redo", "Ctrl+Y", false, false)) {}
+            ImGui::Separator();
+            if (ImGui::MenuItem("Select All", "Ctrl+A", false, false)) {}
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("View")) {
+            ImGui::MenuItem("Properties Panel", NULL, &showPropertyPanel);
+            ImGui::Separator();
+            ImGui::MenuItem("ImGui Demo Window", NULL, &showDemoWindow);
+            ImGui::MenuItem("ImGui Metrics", NULL, &showMetricsWindow);
+            ImGui::MenuItem("About ImGui", NULL, &showAboutWindow);
+            ImGui::EndMenu();
+        }
+
+        ImGui::EndMainMenuBar();
+    }
+
+    renderToolsPanel();
+
+    renderLayersPanel();
+
+    renderTilePalette();
+
+    if (showPropertyPanel) {
+        renderPropertiesPanel();
+    }
+
+    if (showMapBrowser) {
+        renderMapBrowser();
+    }
+
+    renderStatusBar();
+
+    if (showDemoWindow) {
+        ImGui::ShowDemoWindow(&showDemoWindow);
+    }
+
+    if (showMetricsWindow) {
+        ImGui::ShowMetricsWindow(&showMetricsWindow);
+    }
+
+    if (showAboutWindow) {
+        ImGui::ShowAboutWindow(&showAboutWindow);
     }
 }
 
-void MapEditor::handleRightClick(int mouseX, int mouseY) {
-    if (showPropertyPanel) {
-        showPropertyPanel = false;
-        editingProperty = "";
-        editingPropertyValue = false;
+void MapEditor::renderToolsPanel() {
+    ImGui::SetNextWindowPos(ImVec2(10, 30), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(180, 120), ImGuiCond_FirstUseEver);
+
+    if (ImGui::Begin("Tools", nullptr)) {
+        const char* toolNames[] = { "Pencil", "Eraser", "Property Editor" };
+        int toolIndex = static_cast<int>(currentTool);
+
+        if (ImGui::Combo("Tool", &toolIndex, toolNames, IM_ARRAYSIZE(toolNames))) {
+            currentTool = static_cast<EditorTool>(toolIndex);
+        }
+
+        ImGui::Separator();
+
+        if (ImGui::Button("Pencil (1)", ImVec2(150, 0))) {
+            currentTool = EditorTool::PENCIL;
+        }
+
+        if (ImGui::Button("Eraser (2)", ImVec2(150, 0))) {
+            currentTool = EditorTool::ERASER;
+        }
+
+        if (ImGui::Button("Property Editor (3)", ImVec2(150, 0))) {
+            currentTool = EditorTool::PROPERTY_EDITOR;
+        }
     }
+    ImGui::End();
+}
+
+void MapEditor::renderLayersPanel() {
+    ImGui::SetNextWindowPos(ImVec2(10, 160), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(180, 120), ImGuiCond_FirstUseEver);
+
+    if (ImGui::Begin("Layers", nullptr)) {
+        const char* layerNames[] = { "Ground", "Objects", "Collision" };
+        int layerIndex = static_cast<int>(currentLayer);
+
+        if (ImGui::Combo("Layer", &layerIndex, layerNames, IM_ARRAYSIZE(layerNames))) {
+            currentLayer = static_cast<EditorLayer>(layerIndex);
+        }
+
+        ImGui::Separator();
+
+        if (ImGui::Button("Ground (Q)", ImVec2(150, 0))) {
+            currentLayer = EditorLayer::GROUND;
+        }
+
+        if (ImGui::Button("Objects (W)", ImVec2(150, 0))) {
+            currentLayer = EditorLayer::OBJECTS;
+        }
+
+        if (ImGui::Button("Collision (E)", ImVec2(150, 0))) {
+            currentLayer = EditorLayer::COLLISION;
+        }
+    }
+    ImGui::End();
+}
+
+void MapEditor::renderTilePalette() {
+    ImGui::SetNextWindowPos(ImVec2(10, 290), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(180, 300), ImGuiCond_FirstUseEver);
+
+    if (ImGui::Begin("Tile Palette", nullptr)) {
+        ImGui::Text("Available Tiles");
+        ImGui::Separator();
+
+        for (size_t i = 0; i < availableTiles.size(); i++) {
+            bool isSelected = (currentTileIndex == i);
+            if (ImGui::Selectable(availableTiles[i].name.c_str(), isSelected)) {
+                currentTileIndex = i;
+            }
+
+            if (isSelected && ImGui::IsItemHovered()) {
+                ImGui::BeginTooltip();
+                ImGui::Text("Texture ID: %s", availableTiles[i].id.c_str());
+                ImGui::Text("Walkable: %s", availableTiles[i].walkable ? "Yes" : "No");
+                ImGui::EndTooltip();
+            }
+        }
+    }
+    ImGui::End();
+}
+
+void MapEditor::renderPropertiesPanel() {
+    ImGui::SetNextWindowPos(ImVec2(600, 30), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(180, 300), ImGuiCond_FirstUseEver);
+
+    if (ImGui::Begin("Properties", &showPropertyPanel)) {
+        if (hasTileSelected && tileMap->isValidGridPosition(selectedTileX, selectedTileY)) {
+            Tile* tile = tileMap->getTileAt(selectedTileX, selectedTileY);
+            if (tile) {
+                ImGui::Text("Selected Tile: %d,%d", selectedTileX, selectedTileY);
+                ImGui::Separator();
+
+                bool isWalkable = tile->getProperty("walkable", true);
+                if (ImGui::Checkbox("Walkable", &isWalkable)) {
+                    tile->setProperty("walkable", isWalkable);
+                }
+
+                std::string textureID = tile->getProperty<std::string>("textureID", "");
+                ImGui::Text("Texture ID: %s", textureID.c_str());
+
+                std::string objectTexture = tile->getProperty<std::string>("objectTexture", "");
+                ImGui::Text("Object Texture: %s", objectTexture.c_str());
+            }
+        } else {
+            ImGui::Text("No tile selected");
+            ImGui::Text("Use the Property Tool (3)");
+            ImGui::Text("to select a tile");
+        }
+    }
+    ImGui::End();
+}
+
+void MapEditor::renderMapBrowser() {
+    ImGui::SetNextWindowPos(ImVec2(200, 150), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Always);
+
+    const char* title = isNamingMap ? "Save Map As" : "Open Map";
+
+    ImGui::Begin(title, &showMapBrowser, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+
+    if (isNamingMap) {
+        ImGui::Text("Enter Map Name:");
+
+        if (ImGui::InputText("##MapName", inputMapNameBuffer, sizeof(inputMapNameBuffer),
+                             ImGuiInputTextFlags_EnterReturnsTrue)) {
+            if (strlen(inputMapNameBuffer) > 0) {
+                currentMapName = inputMapNameBuffer;
+                saveMap(getMapPath(currentMapName));
+                showMapBrowser = false;
+            }
+        }
+
+        ImGui::Separator();
+
+        if (ImGui::Button("Save", ImVec2(120, 0))) {
+            if (strlen(inputMapNameBuffer) > 0) {
+                currentMapName = inputMapNameBuffer;
+                saveMap(getMapPath(currentMapName));
+                showMapBrowser = false;
+            }
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            showMapBrowser = false;
+        }
+    } else if (isSelectingMap) {
+        ImGui::Text("Select a Map:");
+        ImGui::Separator();
+
+        for (const auto& mapName : availableMaps) {
+            if (ImGui::Selectable(mapName.c_str(), currentMapName == mapName)) {
+                currentMapName = mapName;
+                loadMap(getMapPath(currentMapName));
+                showMapBrowser = false;
+            }
+        }
+
+        ImGui::Separator();
+
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            showMapBrowser = false;
+        }
+    }
+
+    ImGui::End();
+}
+
+void MapEditor::renderStatusBar() {
+    ImGui::SetNextWindowPos(ImVec2(0, ImGui::GetIO().DisplaySize.y - 20));
+    ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, 20));
+    ImGui::Begin("##StatusBar", nullptr,
+                 ImGuiWindowFlags_NoTitleBar |
+                 ImGuiWindowFlags_NoResize |
+                 ImGuiWindowFlags_NoMove |
+                 ImGuiWindowFlags_NoScrollbar |
+                 ImGuiWindowFlags_NoSavedSettings);
+
+    ImGui::Text("Position: %d,%d", gridX, gridY);
+
+    ImGui::SameLine(150);
+
+    ImGui::Text("Map: %s", currentMapName.c_str());
+
+    ImGui::SameLine(300);
+
+    const char* toolNames[] = { "Pencil", "Eraser", "Property Editor" };
+    const char* layerNames[] = { "Ground", "Objects", "Collision" };
+
+    ImGui::Text("Tool: %s | Layer: %s",
+                toolNames[static_cast<int>(currentTool)],
+                layerNames[static_cast<int>(currentLayer)]);
+
+    ImGui::SameLine(ImGui::GetWindowWidth() - 100);
+
+    ImGui::TextDisabled("(?)");
+    if (ImGui::IsItemHovered()) {
+        ImGui::BeginTooltip();
+        ImGui::Text("Map Editor Controls:");
+        ImGui::Text("1-3: Change tools");
+        ImGui::Text("Q-E: Change layers");
+        ImGui::Text("Ctrl+S: Save map");
+        ImGui::Text("Ctrl+L: Load map");
+        ImGui::EndTooltip();
+    }
+
+    ImGui::End();
 }
 
 void MapEditor::applyTileAtPosition(int gridX, int gridY) {
@@ -435,269 +472,8 @@ void MapEditor::openPropertyEditor(int gridX, int gridY) {
         selectedTileX = gridX;
         selectedTileY = gridY;
         hasTileSelected = true;
-        propertiesPanelExpanded = true;
+        showPropertyPanel = true;
     }
-}
-
-
-void MapEditor::update() {
-    if (!active) return;
-
-    // Continuous painting when mouse button is held down could be implemented here
-}
-
-void MapEditor::render(Renderer& renderer) {
-    if (!active) return;
-
-    renderer.setDrawColor(80, 80, 80, 100);
-    for (int y = 0; y <= tileMap->getGridHeight(); y++) {
-        renderer.drawRect(0, y * tileMap->getTileSize(), tileMap->getGridWidth() * tileMap->getTileSize(), 1);
-    }
-    for (int x = 0; x <= tileMap->getGridWidth(); x++) {
-        renderer.drawRect(x * tileMap->getTileSize(), 0, 1, tileMap->getGridHeight() * tileMap->getTileSize());
-    }
-
-    if (tileMap->isValidGridPosition(gridX, gridY)) {
-        int pixelX, pixelY;
-        tileMap->gridToPixel(gridX, gridY, pixelX, pixelY);
-
-        renderer.setDrawColor(255, 255, 0, 100);
-        renderer.drawRect(pixelX, pixelY, tileMap->getTileSize(), tileMap->getTileSize());
-    }
-
-    if (hasTileSelected && propertiesPanelExpanded) {
-        int pixelX, pixelY;
-        tileMap->gridToPixel(selectedTileX, selectedTileY, pixelX, pixelY);
-
-        renderer.setDrawColor(0, 255, 255, 150);
-        renderer.drawRect(pixelX, pixelY, tileMap->getTileSize(), tileMap->getTileSize());
-    }
-
-    renderer.setDrawColor(80, 80, 180, 255);
-    renderer.fillRect(saveButtonArea);
-    renderer.setDrawColor(80, 180, 80, 255);
-    renderer.fillRect(loadButtonArea);
-
-    renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Save Map", saveButtonArea.x + 10, saveButtonArea.y + 8);
-    renderer.drawText("Load Map", loadButtonArea.x + 10, loadButtonArea.y + 8);
-
-    std::string mapInfo = "Current Map: " + currentMapName;
-    renderer.drawText(mapInfo, 20, 530);
-
-    renderer.setDrawColor(40, 40, 80, 200);
-    renderer.fillRect(palettePanelHeaderArea);
-    renderer.fillRect(layersPanelHeaderArea);
-    renderer.fillRect(toolsPanelHeaderArea);
-    renderer.fillRect(propertiesPanelHeaderArea);
-
-    renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Tiles", palettePanelHeaderArea.x + 10, palettePanelHeaderArea.y + 8);
-    renderer.drawText("Layers", layersPanelHeaderArea.x + 10, layersPanelHeaderArea.y + 8);
-    renderer.drawText("Tools", toolsPanelHeaderArea.x + 10, toolsPanelHeaderArea.y + 8);
-    renderer.drawText("Properties", propertiesPanelHeaderArea.x + 10, propertiesPanelHeaderArea.y + 8);
-
-    if (palettePanelExpanded) {
-        renderPalette(renderer);
-    }
-
-    if (layersPanelExpanded) {
-        renderLayerButtons(renderer);
-    }
-
-    if (toolsPanelExpanded) {
-        renderToolButtons(renderer);
-    }
-
-    if (propertiesPanelExpanded) {
-        renderPropertyPanel(renderer);
-    }
-
-    if (showMapBrowser) {
-        renderMapBrowser(renderer);
-    }
-
-     //drawUIBounds(renderer);
-}
-
-void MapEditor::renderPalette(Renderer& renderer) {
-    renderer.setDrawColor(50, 50, 50, 200);
-    renderer.fillRect(paletteArea);
-
-    renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Available Tiles", paletteArea.x + 10, paletteArea.y + 5);
-
-    for (size_t i = 0; i < availableTiles.size(); i++) {
-        int y = paletteArea.y + 30 + i * 30;
-
-        if (currentTileIndex == i) {
-            renderer.setDrawColor(100, 100, 255, 200);
-            renderer.fillRect(paletteArea.x + 5, y, paletteArea.w - 10, 25);
-        }
-
-        renderer.setDrawColor(255, 255, 255, 255);
-        renderer.drawText(availableTiles[i].name, paletteArea.x + 10, y + 5);
-    }
-}
-
-void MapEditor::renderLayerButtons(Renderer& renderer) {
-    renderer.setDrawColor(50, 50, 50, 200);
-    renderer.fillRect(layerButtonsArea);
-
-    renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Select Layer", layerButtonsArea.x + 10, layerButtonsArea.y + 5);
-
-    SDL_Rect groundRect = {layerButtonsArea.x + 5, layerButtonsArea.y + 30, layerButtonsArea.w - 10, 25};
-    if (currentLayer == EditorLayer::GROUND) {
-        renderer.setDrawColor(100, 100, 255, 200);
-        renderer.fillRect(groundRect);
-    }
-    renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Ground (Q)", groundRect.x + 10, groundRect.y + 5);
-
-    SDL_Rect objectsRect = {layerButtonsArea.x + 5, layerButtonsArea.y + 60, layerButtonsArea.w - 10, 25};
-    if (currentLayer == EditorLayer::OBJECTS) {
-        renderer.setDrawColor(100, 100, 255, 200);
-        renderer.fillRect(objectsRect);
-    }
-    renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Objects (W)", objectsRect.x + 10, objectsRect.y + 5);
-
-    SDL_Rect collisionRect = {layerButtonsArea.x + 5, layerButtonsArea.y + 90, layerButtonsArea.w - 10, 25};
-    if (currentLayer == EditorLayer::COLLISION) {
-        renderer.setDrawColor(100, 100, 255, 200);
-        renderer.fillRect(collisionRect);
-    }
-    renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Collision (E)", collisionRect.x + 10, collisionRect.y + 5);
-}
-
-void MapEditor::renderToolButtons(Renderer& renderer) {
-    renderer.setDrawColor(50, 50, 50, 200);
-    renderer.fillRect(toolButtonsArea);
-
-    renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Select Tool", toolButtonsArea.x + 10, toolButtonsArea.y + 5);
-
-    SDL_Rect pencilRect = {toolButtonsArea.x + 5, toolButtonsArea.y + 30, toolButtonsArea.w - 10, 25};
-    if (currentTool == EditorTool::PENCIL) {
-        renderer.setDrawColor(100, 100, 255, 200);
-        renderer.fillRect(pencilRect);
-    }
-    renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Pencil (1)", pencilRect.x + 10, pencilRect.y + 5);
-
-    SDL_Rect eraserRect = {toolButtonsArea.x + 5, toolButtonsArea.y + 60, toolButtonsArea.w - 10, 25};
-    if (currentTool == EditorTool::ERASER) {
-        renderer.setDrawColor(100, 100, 255, 200);
-        renderer.fillRect(eraserRect);
-    }
-    renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Eraser (2)", eraserRect.x + 10, eraserRect.y + 5);
-
-    SDL_Rect propRect = {toolButtonsArea.x + 5, toolButtonsArea.y + 90, toolButtonsArea.w - 10, 25};
-    if (currentTool == EditorTool::PROPERTY_EDITOR) {
-        renderer.setDrawColor(100, 100, 255, 200);
-        renderer.fillRect(propRect);
-    }
-    renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Properties (3)", propRect.x + 10, propRect.y + 5);
-}
-
-void MapEditor::renderPropertyPanel(Renderer& renderer) {
-    renderer.setDrawColor(50, 50, 50, 200);
-    renderer.fillRect(propertiesArea);
-
-    renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Tile Properties", propertiesArea.x + 10, propertiesArea.y + 5);
-
-    Tile* tile = nullptr;
-    if (hasTileSelected && tileMap->isValidGridPosition(selectedTileX, selectedTileY)) {
-        tile = tileMap->getTileAt(selectedTileX, selectedTileY);
-    }
-
-    if (tile) {
-        renderer.setDrawColor(255, 255, 255, 255);
-
-        std::string posText = "Selected: " + std::to_string(selectedTileX) + "," + std::to_string(selectedTileY);
-        renderer.drawText(posText, propertiesArea.x + 10, propertiesArea.y + 35);
-
-        renderer.drawText("Walkable:", propertiesArea.x + 10, propertiesArea.y + 65);
-
-        bool isWalkable = tile->getProperty("walkable", true);
-
-        SDL_Rect toggleRect = {
-            propertiesArea.x + 100,
-            propertiesArea.y + 62,
-            40,
-            20
-        };
-
-        if (isWalkable) {
-            renderer.setDrawColor(0, 200, 0, 255);
-        } else {
-            renderer.setDrawColor(200, 0, 0, 255);
-        }
-
-        renderer.fillRect(toggleRect);
-
-        renderer.setDrawColor(255, 255, 255, 255);
-        renderer.drawText(isWalkable ? "True" : "False", toggleRect.x + 5, toggleRect.y + 3);
-
-        renderer.drawText("Texture:", propertiesArea.x + 10, propertiesArea.y + 95);
-        std::string textureID = tile->getProperty<std::string>("textureID", "none");
-        renderer.drawText(textureID, propertiesArea.x + 80, propertiesArea.y + 95);
-
-        renderer.drawText("Click to toggle walkable", propertiesArea.x + 10, propertiesArea.y + 140);
-        renderer.drawText("Right-click to close panel", propertiesArea.x + 10, propertiesArea.y + 160);
-    } else {
-        renderer.drawText("No tile selected", propertiesArea.x + 10, propertiesArea.y + 80);
-        renderer.drawText("Use the Property Tool", propertiesArea.x + 10, propertiesArea.y + 110);
-        renderer.drawText("to select a tile", propertiesArea.x + 10, propertiesArea.y + 130);
-    }
-}
-
-void MapEditor::renderMapBrowser(Renderer& renderer) {
-    renderer.setDrawColor(0, 0, 0, 200);
-    renderer.fillRect(0, 0, 800, 600);
-
-    renderer.setDrawColor(50, 50, 50, 255);
-    renderer.fillRect(200, 200, 400, 320);
-
-    renderer.setDrawColor(255, 255, 255, 255);
-
-    if (isNamingMap) {
-        renderer.drawText("Enter Map Name:", 250, 220);
-
-        renderer.setDrawColor(20, 20, 20, 255);
-        renderer.fillRect(inputArea);
-
-        renderer.setDrawColor(255, 255, 255, 255);
-        renderer.drawText(inputMapName + "_", inputArea.x + 10, inputArea.y + 15);
-
-        renderer.drawText("Press Enter to save, Escape to cancel", 250, 480);
-    }
-    else if (isSelectingMap) {
-        renderer.drawText("Select a Map:", 250, 220);
-
-        renderer.setDrawColor(20, 20, 20, 255);
-        renderer.fillRect(mapListArea);
-
-        renderer.setDrawColor(255, 255, 255, 255);
-
-        int y = mapListArea.y + 10;
-        for (const auto& mapName : availableMaps) {
-            renderer.drawText(mapName, mapListArea.x + 10, y);
-            y += 30;
-        }
-
-        renderer.drawText("Click on a map to load, Escape to cancel", 250, 480);
-    }
-}
-
-bool MapEditor::isPointInRect(int x, int y, const SDL_Rect& rect) const {
-    return (x >= rect.x && x < rect.x + rect.w &&
-            y >= rect.y && y < rect.y + rect.h);
 }
 
 bool MapEditor::saveMap(const std::string& filename) {
@@ -765,8 +541,6 @@ bool MapEditor::loadMap(const std::string& filename) {
             return false;
         }
 
-        // TODO: Reinitialize tilemap with loaded dimensions if they differ
-
         for (int y = 0; y < tileMap->getGridHeight(); y++) {
             for (int x = 0; x < tileMap->getGridWidth(); x++) {
                 Tile* tile = tileMap->getTileAt(x, y);
@@ -818,31 +592,6 @@ std::string MapEditor::getMapPath(const std::string& mapName) {
     return "maps/" + mapName + ".json";
 }
 
-void MapEditor::drawUIBounds(Renderer& renderer) {
-    Uint8 r, g, b, a;
-    SDL_GetRenderDrawColor(renderer.getRenderer(), &r, &g, &b, &a);
-
-    renderer.setDrawColor(255, 0, 0, 255);
-    renderer.drawRect(paletteArea);
-
-    renderer.setDrawColor(0, 255, 0, 255);
-    renderer.drawRect(layerButtonsArea);
-
-    renderer.setDrawColor(0, 0, 255, 255);
-    renderer.drawRect(toolButtonsArea);
-
-    renderer.setDrawColor(255, 255, 0, 255);
-    renderer.drawRect(propertiesArea);
-
-    renderer.setDrawColor(255, 0, 255, 255);
-    renderer.drawRect(saveButtonArea);
-
-    renderer.setDrawColor(0, 255, 255, 255);
-    renderer.drawRect(loadButtonArea);
-
-    renderer.setDrawColor(r, g, b, a);
-}
-
 void MapEditor::scanMapDirectory() {
     availableMaps.clear();
 
@@ -867,24 +616,4 @@ void MapEditor::scanMapDirectory() {
         availableMaps.push_back("city");
         availableMaps.push_back("arena");
     }
-}
-
-bool MapEditor::isPointOverAnyPanel(int x, int y) const {
-    if (palettePanelExpanded && isPointInRect(x, y, paletteArea)) {
-        return true;
-    }
-
-    if (layersPanelExpanded && isPointInRect(x, y, layerButtonsArea)) {
-        return true;
-    }
-
-    if (toolsPanelExpanded && isPointInRect(x, y, toolButtonsArea)) {
-        return true;
-    }
-
-    if (propertiesPanelExpanded && isPointInRect(x, y, propertiesArea)) {
-        return true;
-    }
-
-    return false;
 }

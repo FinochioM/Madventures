@@ -3,7 +3,9 @@
 #include <fstream>
 #include <filesystem>
 
-Game::Game() : currentState(GameState::CITY), isRunning(true), mouseX(0), mouseY(0), score(0), movesRemaining(10), playerSelected(false) {
+Game::Game() : currentState(GameState::CITY), isRunning(true), mouseX(0), mouseY(0),
+               score(0), movesRemaining(10), playerSelected(false),
+               window(nullptr), glContext(nullptr), imguiInitialized(false) {
     arenaButton = {350, 400, 100, 50};
     editorButton = {460, 400, 100, 50};
 
@@ -48,6 +50,20 @@ bool Game::initialize() {
     return true;
 }
 
+bool Game::initializeImGui() {
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplSDL2_InitForOpenGL(window, glContext);
+    ImGui_ImplOpenGL3_Init("#version 130");
+
+    imguiInitialized = true;
+    return true;
+}
 
 void Game::placePlayerInValidPosition() {
     for (int y = 0; y < tileMap->getGridHeight(); y++) {
@@ -108,7 +124,7 @@ bool Game::loadAssets(Renderer& renderer) {
         std::cout << "Warning: Tile Wall sprite not found. Using placeholder." << std::endl;
     }
 
-    
+
     return true;
 }
 
@@ -337,6 +353,7 @@ void Game::switchToEditor() {
 }
 
 void Game::cleanup() {
+    shutdownImGui();
     // Cleanup I guesss.
 }
 
@@ -376,5 +393,14 @@ void Game::setCurrentArena(const std::string& arenaName) {
     currentArena = arenaName;
     if (currentState == GameState::ARENA) {
         loadMap(currentArena);
+    }
+}
+
+void Game::shutdownImGui() {
+    if (imguiInitialized) {
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplSDL2_Shutdown();
+        ImGui::DestroyContext();
+        imguiInitialized = false;
     }
 }

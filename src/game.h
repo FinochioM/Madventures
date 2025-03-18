@@ -10,6 +10,11 @@
 #include "tilemap.h"
 #include "map_editor.h"
 
+#include "imgui/imgui.h"
+#include "imgui/backends/imgui_impl_sdl2.h"
+#include "imgui/backends/imgui_impl_opengl3.h"
+#include <SDL2/SDL_opengl.h>
+
 enum class GameState {
     CITY,
     ARENA,
@@ -34,6 +39,8 @@ public:
     bool loadAssets(Renderer& renderer);
 
     TileMap* getTileMap() const { return tileMap; }
+    SDL_Window* getWindow() const { return window; }
+    SDL_GLContext getGLContext() const { return glContext; }
 
 private:
     GameState currentState;
@@ -54,6 +61,10 @@ private:
     TileMap* tileMap;
     MapEditor* mapEditor;
 
+    SDL_Window* window;
+    SDL_GLContext glContext;
+    bool imguiInitialized;
+
     void handleCityEvents(SDL_Event& e);
     void handleArenaEvents(SDL_Event& e);
     void handleEditorEvents(SDL_Event& e);
@@ -73,6 +84,9 @@ private:
     bool loadMap(const std::string& mapName);
     void setCurrentCity(const std::string& cityName);
     void setCurrentArena(const std::string& arenaName);
+
+    bool initializeImGui();
+    void shutdownImGui();
 };
 
 #endif // GAME_H
