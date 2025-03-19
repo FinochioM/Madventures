@@ -6,13 +6,13 @@
 Game::Game() : currentState(GameState::CITY), isRunning(true), mouseX(0), mouseY(0),
                score(0), movesRemaining(10), playerSelected(false),
                window(nullptr), glContext(nullptr), imguiInitialized(false) {
-    arenaButton = {350, 400, 100, 50};
+    //arenaButton = {350, 400, 100, 50};
     editorButton = {460, 400, 100, 50};
 
     tileMap = new TileMap(32, 1024, 768);
     mapEditor = new MapEditor(tileMap);
 
-    player = new Player(0, 0);
+    player = new Player(100, 100);
 }
 
 Game::~Game() {
@@ -30,7 +30,7 @@ Game::~Game() {
 bool Game::initialize() {
     tileMap->initialize();
 
-    currentCity = "city";
+    currentCity = "default";
     currentArena = "arena";
 
     std::filesystem::create_directories("maps");
@@ -40,7 +40,7 @@ bool Game::initialize() {
         std::cout << "No city map found. Use the editor to create one." << std::endl;
 
         switchToEditor();
-        mapEditor->saveMap("maps/city.json");
+        mapEditor->saveMap("maps/default.json");
         mapEditor->saveMap("maps/arena.json");
 
         loadMap(currentCity);
@@ -157,18 +157,6 @@ void Game::handleEvent(SDL_Event& e) {
 void Game::handleCityEvents(SDL_Event& e) {
     if (e.type == SDL_MOUSEBUTTONDOWN) {
         if (e.button.button == SDL_BUTTON_LEFT) {
-            if (mouseX >= arenaButton.x && mouseX <= arenaButton.x + arenaButton.w &&
-                mouseY >= arenaButton.y && mouseY <= arenaButton.y + arenaButton.h) {
-                    switchToArena();
-                    return;
-            }
-
-            if (mouseX >= editorButton.x && mouseX <= editorButton.x + editorButton.w &&
-                mouseY >= editorButton.y && mouseY <= editorButton.y + editorButton.h) {
-                    switchToEditor();
-                    return;
-            }
-
             if (player->isPointOnPlayer(mouseX, mouseY)) {
                 player->setSelected(true);
                 playerSelected = true;
@@ -263,8 +251,8 @@ void Game::updateEditor() {
 void Game::render(Renderer& renderer) {
     switch (currentState) {
         case GameState::CITY:
-            renderCity(renderer);
             tileMap->render(renderer);
+            renderCity(renderer);
             renderMovementRange(renderer);
             for (auto entity : entities) {
                 entity->render(renderer);
@@ -272,8 +260,8 @@ void Game::render(Renderer& renderer) {
             player->render(renderer);
             break;
         case GameState::ARENA:
-            renderArena(renderer);
             tileMap->render(renderer);
+            renderArena(renderer);
             renderMovementRange(renderer);
             for (auto entity : entities) {
                 entity->render(renderer);
@@ -287,30 +275,11 @@ void Game::render(Renderer& renderer) {
 }
 
 void Game::renderCity(Renderer& renderer) {
-    renderer.setDrawColor(100, 100, 200, 255);
-    renderer.fillRect(0, 0, 800, 600);
 
-    renderer.setDrawColor(150, 150, 150, 255);
-    renderer.fillRect(arenaButton);
-
-    renderer.setDrawColor(0, 0, 0, 255); // Black text
-    renderer.drawText("Arena", arenaButton.x + 25, arenaButton.y + 15);
-
-    std::string scoreText = "Score: " + std::to_string(score);
-    renderer.drawText(scoreText, 20, 20);
 }
 
 void Game::renderArena(Renderer& renderer) {
-    renderer.setDrawColor(200, 100, 100, 255);
-    renderer.fillRect(0, 0, 800, 600);
 
-    std::string scoreText = "Score: " + std::to_string(score);
-    renderer.drawText(scoreText, 20, 20);
-
-    std::string movesText = "Moves: " + std::to_string(movesRemaining);
-    renderer.drawText(movesText, 20, 50);
-
-    renderer.drawText("Click to use a move and earn points", 250, 300);
 }
 
 void Game::renderEditor(Renderer& renderer) {

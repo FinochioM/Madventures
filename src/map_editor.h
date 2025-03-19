@@ -97,6 +97,28 @@ private:
     ImVec4 selectedTileColor;
     ImVec4 cursorColor;
     float gridOpacity;
+
+    bool isMouseButtonDown;
+    bool isCtrlPressed;
+
+    struct TileAction {
+        int gridX, gridY;
+        EditorLayer layer;
+        std::string oldTextureID;
+        std::string newTextureID;
+        bool oldWalkable;
+        bool newWalkable;
+        std::string oldObjectTexture;
+        std::string newObjectTexture;
+    };
+
+    std::vector<TileAction> undoStack;
+    std::vector<TileAction> redoStack;
+
+    void recordAction(const TileAction& action);
+    void undo();
+    void redo();
+    void selectAll();
 };
 
 #endif // MAP_EDITOR_H

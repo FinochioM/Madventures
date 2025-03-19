@@ -30,7 +30,9 @@ MapEditor::MapEditor(TileMap* tileMap) :
     gridColor(0.3f, 0.3f, 0.3f, 0.5f),
     selectedTileColor(0.0f, 1.0f, 1.0f, 0.6f),
     cursorColor(1.0f, 1.0f, 0.0f, 0.4f),
-    gridOpacity(0.5f) {
+    gridOpacity(0.5f),
+    isMouseButtonDown(false),
+    isCtrlPressed(false) {
 
     strcpy(inputMapNameBuffer, currentMapName.c_str());
 
@@ -59,12 +61,26 @@ void MapEditor::handleEvent(SDL_Event& e) {
     if (e.type == SDL_MOUSEMOTION) {
         SDL_GetMouseState(&mouseX, &mouseY);
         tileMap->pixelToGrid(mouseX, mouseY, gridX, gridY);
+
+        if (isMouseButtonDown && tileMap->isValidGridPosition(gridX, gridY)) {
+            switch (currentTool) {
+                case EditorTool::PENCIL:
+                    applyTileAtPosition(gridX, gridY);
+                    break;
+                case EditorTool::ERASER:
+                    eraseTileAtPosition(gridX, gridY);
+                    break;
+                case EditorTool::PROPERTY_EDITOR:
+                    break;
+            }
+        }
     }
 
     if (e.type == SDL_MOUSEBUTTONDOWN) {
         ImGuiIO& io = ImGui::GetIO();
         if (!io.WantCaptureMouse) {
             if (e.button.button == SDL_BUTTON_LEFT) {
+                isMouseButtonDown = true;
                 if (tileMap->isValidGridPosition(gridX, gridY)) {
                     switch (currentTool) {
                         case EditorTool::PENCIL:
@@ -82,12 +98,40 @@ void MapEditor::handleEvent(SDL_Event& e) {
         }
     }
 
+    if (e.type == SDL_MOUSEBUTTONUP) {
+        if (e.button.button == SDL_BUTTON_LEFT) {
+            isMouseButtonDown = false;
+        }
+    }
+
     if (e.type == SDL_KEYDOWN) {
         ImGuiIO& io = ImGui::GetIO();
         if (!io.WantCaptureKeyboard) {
-            if (e.key.keysym.sym == SDLK_ESCAPE) {
+            if (e.key.keysym.sym == SDLK_LCTRL || e.key.keysym.sym == SDLK_RCTRL) {
+                isCtrlPressed = true;
+            }
+            else if (isCtrlPressed) {
+                switch (e.key.keysym.sym) {
+                    case SDLK_z:
+                        undo();
+                        break;
+                    case SDLK_y:
+                        redo();
+                        break;
+                    case SDLK_a:
+                        selectAll();
+                        break;
+                }
+            }
+            else if (e.key.keysym.sym == SDLK_ESCAPE) {
                 hasTileSelected = false;
             }
+        }
+    }
+
+    if (e.type == SDL_KEYUP) {
+        if (e.key.keysym.sym == SDLK_LCTRL || e.key.keysym.sym == SDLK_RCTRL) {
+            isCtrlPressed = false;
         }
     }
 }
@@ -168,10 +212,16 @@ void MapEditor::renderImGuiInterface() {
         }
 
         if (ImGui::BeginMenu("Edit")) {
-            if (ImGui::MenuItem("Undo", "Ctrl+Z", false, false)) {}
-            if (ImGui::MenuItem("Redo", "Ctrl+Y", false, false)) {}
+            if (ImGui::MenuItem("Undo", "Ctrl+Z", false, !undoStack.empty())) {
+                undo();
+            }
+            if (ImGui::MenuItem("Redo", "Ctrl+Y", false, !redoStack.empty())) {
+                redo();
+            }
             ImGui::Separator();
-            if (ImGui::MenuItem("Select All", "Ctrl+A", false, false)) {}
+            if (ImGui::MenuItem("Select All", "Ctrl+A")) {
+                selectAll();
+            }
             ImGui::EndMenu();
         }
 
@@ -434,17 +484,39 @@ void MapEditor::applyTileAtPosition(int gridX, int gridY) {
 
         Tile* tile = tileMap->getTileAt(gridX, gridY);
         if (tile) {
+            TileAction action;
+            action.gridX = gridX;
+            action.gridY = gridY;
+            action.layer = currentLayer;
+
             switch (currentLayer) {
                 case EditorLayer::GROUND:
+                    action.oldTextureID = tile->getProperty<std::string>("textureID", "");
+                    action.newTextureID = selectedTile.id;
+                    if (action.oldTextureID == action.newTextureID) {
+                        return;
+                    }
                     tileMap->setTileTexture(gridX, gridY, selectedTile.id);
                     break;
                 case EditorLayer::OBJECTS:
+                    action.oldObjectTexture = tile->getProperty<std::string>("objectTexture", "");
+                    action.newObjectTexture = selectedTile.id;
+                    if (action.oldObjectTexture == action.newObjectTexture) {
+                        return;
+                    }
                     tile->setProperty("objectTexture", selectedTile.id);
                     break;
                 case EditorLayer::COLLISION:
+                    action.oldWalkable = tile->getProperty("walkable", true);
+                    action.newWalkable = selectedTile.walkable;
+                    if (action.oldWalkable == action.newWalkable) {
+                        return;
+                    }
                     tile->setProperty("walkable", selectedTile.walkable);
                     break;
             }
+
+            recordAction(action);
         }
     }
 }
@@ -452,17 +524,39 @@ void MapEditor::applyTileAtPosition(int gridX, int gridY) {
 void MapEditor::eraseTileAtPosition(int gridX, int gridY) {
     Tile* tile = tileMap->getTileAt(gridX, gridY);
     if (tile) {
+        TileAction action;
+        action.gridX = gridX;
+        action.gridY = gridY;
+        action.layer = currentLayer;
+
         switch (currentLayer) {
             case EditorLayer::GROUND:
+                action.oldTextureID = tile->getProperty<std::string>("textureID", "");
+                action.newTextureID = "";
+                if (action.oldTextureID.empty()) {
+                    return;
+                }
                 tileMap->setTileTexture(gridX, gridY, "");
                 break;
             case EditorLayer::OBJECTS:
+                action.oldObjectTexture = tile->getProperty<std::string>("objectTexture", "");
+                action.newObjectTexture = "";
+                if (action.oldObjectTexture.empty()) {
+                    return;
+                }
                 tile->setProperty("objectTexture", "");
                 break;
             case EditorLayer::COLLISION:
+                action.oldWalkable = tile->getProperty("walkable", false);
+                action.newWalkable = true;
+                if (action.oldWalkable == true) {
+                    return;
+                }
                 tile->setProperty("walkable", true);
                 break;
         }
+
+        recordAction(action);
     }
 }
 
@@ -615,5 +709,75 @@ void MapEditor::scanMapDirectory() {
         availableMaps.push_back("default");
         availableMaps.push_back("city");
         availableMaps.push_back("arena");
+    }
+}
+
+void MapEditor::recordAction(const TileAction& action) {
+    undoStack.push_back(action);
+    redoStack.clear();
+}
+
+void MapEditor::undo() {
+    if (undoStack.empty()) return;
+
+    TileAction action = undoStack.back();
+    undoStack.pop_back();
+
+    TileAction redoAction = action;
+    std::swap(redoAction.oldTextureID, redoAction.newTextureID);
+    std::swap(redoAction.oldWalkable, redoAction.newWalkable);
+    std::swap(redoAction.oldObjectTexture, redoAction.newObjectTexture);
+    redoStack.push_back(redoAction);
+
+    Tile* tile = tileMap->getTileAt(action.gridX, action.gridY);
+    if (tile) {
+        switch (action.layer) {
+            case EditorLayer::GROUND:
+                tileMap->setTileTexture(action.gridX, action.gridY, action.oldTextureID);
+                break;
+            case EditorLayer::OBJECTS:
+                tile->setProperty("objectTexture", action.oldObjectTexture);
+                break;
+            case EditorLayer::COLLISION:
+                tile->setProperty("walkable", action.oldWalkable);
+                break;
+        }
+    }
+}
+
+void MapEditor::redo() {
+    if (redoStack.empty()) return;
+
+    TileAction action = redoStack.back();
+    redoStack.pop_back();
+
+    TileAction undoAction = action;
+    std::swap(undoAction.oldTextureID, undoAction.newTextureID);
+    std::swap(undoAction.oldWalkable, undoAction.newWalkable);
+    std::swap(undoAction.oldObjectTexture, undoAction.newObjectTexture);
+    undoStack.push_back(undoAction);
+
+    Tile* tile = tileMap->getTileAt(action.gridX, action.gridY);
+    if (tile) {
+        switch (action.layer) {
+            case EditorLayer::GROUND:
+                tileMap->setTileTexture(action.gridX, action.gridY, action.newTextureID);
+                break;
+            case EditorLayer::OBJECTS:
+                tile->setProperty("objectTexture", action.newObjectTexture);
+                break;
+            case EditorLayer::COLLISION:
+                tile->setProperty("walkable", action.newWalkable);
+                break;
+        }
+    }
+}
+
+void MapEditor::selectAll() {
+    if (tileMap->getGridWidth() > 0 && tileMap->getGridHeight() > 0) {
+        selectedTileX = 0;
+        selectedTileY = 0;
+        hasTileSelected = true;
+        showPropertyPanel = true;
     }
 }
