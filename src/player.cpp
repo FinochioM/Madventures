@@ -7,7 +7,8 @@
 
 Player::Player(float x, float y)
     : Entity(std::floor(x / 32) * 32, std::floor(y / 32) * 32, 32, 32), health(100), speed(5), isMoving(false), direction(0),
-                            targetX(x), targetY(y), hasTarget(false), selected(false), currentPathIndex(0), movementRange(5) {
+                            targetX(x), targetY(y), hasTarget(false), selected(false), currentPathIndex(0), movementRange(5),
+                            attackDamage(10), attackRange(1), maxAttacks(5), remainingAttacks(5) {
     textureID = "player";
 }
 
@@ -71,6 +72,9 @@ void Player::render(Renderer& renderer) {
 
     std::string healthText = "HP " + std::to_string(health);
     renderer.drawText(healthText, static_cast<int>(x), static_cast<int>(y - 20));
+
+    std::string attacksText = "Attacks: " + std::to_string(remainingAttacks);
+    renderer.drawText(attacksText, static_cast<int>(x), static_cast<int>(y - 40));
 }
 
 void Player::setTargetPosition(float targetX, float targetY) {
@@ -138,4 +142,31 @@ void Player::calculateAvailableTiles(const TileMap* tileMap) {
 bool Player::isTileAvailable(int gridX, int gridY) const {
     return std::find(availableTiles.begin(), availableTiles.end(),
                     std::make_pair(gridX, gridY)) != availableTiles.end();
+}
+
+void Player::calculateAttackTargets(const TileMap* tileMap) {
+    attackTargets.clear();
+
+    int playerGridX, playerGridY;
+    tileMap->pixelToGrid(x, y, playerGridX, playerGridY);
+
+    for (int dx = -attackRange; dx <= attackRange; dx++) {
+        for (int dy = -attackRange; dy <= attackRange; dy++) {
+            if (std::abs(dx) + std::abs(dy) > attackRange) continue;
+
+            int targetX = playerGridX + dx;
+            int targetY = playerGridY + dy;
+
+            if (dx == 0 && dy == 0) continue;
+
+            if (tileMap->isValidGridPosition(targetX, targetY)) {
+                attackTargets.push_back(std::make_pair(targetX, targetY));
+            }
+        }
+    }
+}
+
+bool Player::isTileInAttackRange(int gridX, int gridY) const {
+    return std::find(attackTargets.begin(), attackTargets.end(),
+                    std::make_pair(gridX, gridY)) != attackTargets.end();
 }

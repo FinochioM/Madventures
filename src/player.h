@@ -32,6 +32,25 @@ public:
     bool isTileAvailable(int gridX, int gridY) const;
     int getMovementRange() const { return movementRange; }
     void setMovementRange(int range) { movementRange = range; }
+
+    int getAttackDamage() const { return attackDamage; }
+    void setAttackDamage(int damage) { attackDamage = damage; }
+
+    int getAttackRange() const { return attackRange; }
+    void setAttackRange(int range) { attackRange = range; }
+
+    int getMaxAttacks() const { return maxAttacks; }
+    void setMaxAttacks(int attacks) { maxAttacks = attacks; }
+
+    int getRemainingAttacks() const { return remainingAttacks; }
+    void setRemainingAttacks(int remain) { remainingAttacks = remain; }
+
+    void useAttack() { if (remainingAttacks > 0) remainingAttacks--; }
+    bool hasAttacksRemaining() const { return remainingAttacks > 0; }
+
+    void calculateAttackTargets(const TileMap* tileMap);
+    const std::vector<std::pair<int, int>>& getAttackTargets() const { return attackTargets; }
+    bool isTileInAttackRange(int griX, int gridY) const;
 private:
     int health;
     int speed;
@@ -46,6 +65,12 @@ private:
 
     int movementRange;
     std::vector<std::pair<int, int>> availableTiles;
+
+    int attackDamage;
+    int attackRange;
+    int maxAttacks;
+    int remainingAttacks;
+    std::vector<std::pair<int, int>> attackTargets;
 };
 
 #endif // PLAYER_H

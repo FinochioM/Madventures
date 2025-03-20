@@ -9,6 +9,8 @@
 #include "player.h"
 #include "tilemap.h"
 #include "map_editor.h"
+#include "enemy.h"
+#include "combat_manager.h"
 
 #include "imgui/imgui.h"
 #include "imgui/backends/imgui_impl_sdl2.h"
@@ -53,6 +55,7 @@ private:
     int movesRemaining;
 
     SDL_Rect arenaButton;
+    SDL_Rect cityButton;
     SDL_Rect editorButton;
 
     Player* player;
@@ -87,6 +90,9 @@ private:
 
     bool initializeImGui();
     void shutdownImGui();
+
+    CombatManager* combatManager;
+    bool inCombat;
 };
 
 #endif // GAME_H
