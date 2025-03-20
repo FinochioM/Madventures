@@ -4,6 +4,7 @@
 #include <queue>
 #include <set>
 #include <algorithm>
+#include <iostream>
 
 Player::Player(float x, float y)
     : Entity(std::floor(x / 32) * 32, std::floor(y / 32) * 32, 32, 32), health(100), speed(5), isMoving(false), direction(0),
@@ -150,6 +151,9 @@ void Player::calculateAttackTargets(const TileMap* tileMap) {
     int playerGridX, playerGridY;
     tileMap->pixelToGrid(x, y, playerGridX, playerGridY);
 
+    std::cout << "Calculating attack targets from player position: "
+              << playerGridX << "," << playerGridY << std::endl;
+
     for (int dx = -attackRange; dx <= attackRange; dx++) {
         for (int dy = -attackRange; dy <= attackRange; dy++) {
             if (std::abs(dx) + std::abs(dy) > attackRange) continue;
@@ -161,12 +165,26 @@ void Player::calculateAttackTargets(const TileMap* tileMap) {
 
             if (tileMap->isValidGridPosition(targetX, targetY)) {
                 attackTargets.push_back(std::make_pair(targetX, targetY));
+                std::cout << "Added attack target: " << targetX << "," << targetY << std::endl;
             }
         }
     }
+
+    std::cout << "Total attack targets: " << attackTargets.size() << std::endl;
 }
 
 bool Player::isTileInAttackRange(int gridX, int gridY) const {
-    return std::find(attackTargets.begin(), attackTargets.end(),
-                    std::make_pair(gridX, gridY)) != attackTargets.end();
+    // Debug output to trace attack range calculations
+    std::cout << "Checking if tile " << gridX << "," << gridY << " is in attack range..." << std::endl;
+
+    for (const auto& tile : attackTargets) {
+        std::cout << "Attack target: " << tile.first << "," << tile.second << std::endl;
+        if (tile.first == gridX && tile.second == gridY) {
+            std::cout << "Target is in attack range!" << std::endl;
+            return true;
+        }
+    }
+
+    std::cout << "Target is NOT in attack range" << std::endl;
+    return false;
 }

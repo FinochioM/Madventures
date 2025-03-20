@@ -224,9 +224,20 @@ void Game::handleArenaEvents(SDL_Event& e) {
 
                 player->calculateAvailableTiles(tileMap);
                 player->calculateAttackTargets(tileMap);
-            } else if (playerSelected) {
-                if (inCombat && combatManager->canAttack(gridX, gridY)) {
-                    combatManager->handleCombatEvent(gridX, gridY);
+
+                std::cout << "Player selected. Attack targets: " << player->getAttackTargets().size() << std::endl;
+            }
+            else if (playerSelected) {
+                int enemyIndex = combatManager->getEnemyAt(gridX, gridY);
+                bool inAttackRange = player->isTileInAttackRange(gridX, gridY);
+
+                std::cout << "Clicked grid: " << gridX << "," << gridY << std::endl;
+                std::cout << "Enemy at position: " << (enemyIndex != -1 ? "Yes" : "No") << std::endl;
+                std::cout << "In attack range: " << (inAttackRange ? "Yes" : "No") << std::endl;
+
+                if (inCombat && enemyIndex != -1 && inAttackRange) {
+                    std::cout << "Attacking enemy at " << gridX << "," << gridY << std::endl;
+                    combatManager->playerAttack(enemyIndex);
                     player->setSelected(false);
                     playerSelected = false;
                 }
@@ -350,8 +361,9 @@ void Game::renderArena(Renderer& renderer) {
             int pixelX, pixelY;
             tileMap->gridToPixel(tile.first, tile.second, pixelX, pixelY);
 
-            if (inCombat && combatManager->getEnemyAt(tile.first, tile.second) != -1) {
-                renderer.setDrawColor(255, 0, 0, 100);
+            int enemyIndex = combatManager->getEnemyAt(tile.first, tile.second);
+            if (inCombat && enemyIndex != -1) {
+                renderer.setDrawColor(255, 0, 0, 150);
             } else {
                 renderer.setDrawColor(255, 165, 0, 100);
             }

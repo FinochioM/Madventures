@@ -80,15 +80,22 @@ void CombatManager::endCombat() {
 }
 
 void CombatManager::playerAttack(int targetIndex) {
-    if (!inCombat || !playerTurn || targetIndex < 0 || targetIndex >= enemies.size()) return;
+    if (!inCombat || targetIndex < 0 || targetIndex >= enemies.size()) {
+        std::cout << "Invalid attack target index: " << targetIndex << std::endl;
+        return;
+    }
 
     Enemy* target = enemies[targetIndex];
 
     bool killed = target->takeDamage(player->getAttackDamage());
 
-    std::cout << "Player attacked enemy for " << player->getAttackDamage() << " damage" << std::endl;
+    std::cout << "Player attacked enemy for " << player->getAttackDamage()
+              << " damage. Enemy health: " << target->getHealth() << std::endl;
 
     player->useAttack();
+    std::cout << "Attacks remaining: " << player->getRemainingAttacks() << std::endl;
+
+    target->setTargeted(true);
 
     playerTurn = false;
 }
@@ -113,6 +120,8 @@ void CombatManager::spawnWave() {
 
     numEnemies = std::min(numEnemies, static_cast<int>(spawnPositions.size()));
 
+    std::cout << "Spawning " << numEnemies << " enemies for wave " << currentWave << std::endl;
+
     for (int i = 0; i < numEnemies; i++) {
         int index = std::rand() % spawnPositions.size();
         auto pos = spawnPositions[index];
@@ -122,6 +131,9 @@ void CombatManager::spawnWave() {
         float spawnX = pos.first * tileSize;
         float spawnY = pos.second * tileSize;
 
+        std::cout << "Spawning enemy at grid: " << pos.first << "," << pos.second
+                  << " (pixel: " << spawnX << "," << spawnY << ")" << std::endl;
+
         int enemyHealth = 10 + (currentWave * 5);
         int enemyDamage = 2 + currentWave;
 
@@ -129,7 +141,7 @@ void CombatManager::spawnWave() {
         enemies.push_back(enemy);
     }
 
-    std::cout << "Wave " << currentWave << " spawned with " << numEnemies << " enemies" << std::endl;
+    std::cout << "Wave " << currentWave << " spawned with " << enemies.size() << " enemies" << std::endl;
 }
 
 std::vector<std::pair<int, int>> CombatManager::getValidSpawnPositions() const {
@@ -172,10 +184,8 @@ void CombatManager::executeEnemyTurns() {
                 int playerGridX, playerGridY;
                 tileMap->pixelToGrid(player->getX(), player->getY(), playerGridX, playerGridY);
 
-                // Find path to player and move along it
                 auto path = tileMap->findPath(enemyGridX, enemyGridY, playerGridX, playerGridY);
                 if (!path.empty() && path.size() > 1) {
-                    // Move to the first step in the path (skip starting position)
                     int tileSize = tileMap->getTileSize();
                     float targetX = path[1].first * tileSize;
                     float targetY = path[1].second * tileSize;
@@ -213,6 +223,9 @@ int CombatManager::getEnemyAt(int gridX, int gridY) const {
     for (size_t i = 0; i < enemies.size(); i++) {
         int enemyGridX, enemyGridY;
         tileMap->pixelToGrid(enemies[i]->getX(), enemies[i]->getY(), enemyGridX, enemyGridY);
+
+        std::cout << "Enemy " << i << " at grid: " << enemyGridX << "," << enemyGridY
+                  << " checking against: " << gridX << "," << gridY << std::endl;
 
         if (enemyGridX == gridX && enemyGridY == gridY) {
             return static_cast<int>(i);
