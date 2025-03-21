@@ -134,6 +134,17 @@ bool Game::loadAssets(Renderer& renderer) {
         std::cout << "Warning: Tile Wall sprite not found. Using placeholder." << std::endl;
     }
 
+    if (!renderer.loadTexture("player_selection", "assets/player_selection.png")){
+        std::cout << "Warning: Tile Wall sprite not found. Using placeholder." << std::endl;
+    }
+
+    if (!renderer.loadTexture("tile_selection", "assets/tile_selection.png")){
+        std::cout << "Warning: Tile Wall sprite not found. Using placeholder." << std::endl;
+    }
+
+    if (!renderer.loadTexture("tile_selection_enemy", "assets/tile_selection_enemy.png")){
+        std::cout << "Warning: Tile Wall sprite not found. Using placeholder." << std::endl;
+    }
 
     return true;
 }
@@ -356,6 +367,17 @@ void Game::renderCity(Renderer& renderer) {
 
 void Game::renderArena(Renderer& renderer) {
     if (playerSelected) {
+        const auto& availableTiles = player->getAvailableTiles();
+        for (const auto& tile : availableTiles) {
+            int pixelX, pixelY;
+            tileMap->gridToPixel(tile.first, tile.second, pixelX, pixelY);
+
+            renderer.renderTexture("tile_selection", pixelX, pixelY,
+                                 tileMap->getTileSize(), tileMap->getTileSize());
+        }
+    }
+
+    if (playerSelected) {
         const auto& attackTargets = player->getAttackTargets();
         for (const auto& tile : attackTargets) {
             int pixelX, pixelY;
@@ -363,12 +385,12 @@ void Game::renderArena(Renderer& renderer) {
 
             int enemyIndex = combatManager->getEnemyAt(tile.first, tile.second);
             if (inCombat && enemyIndex != -1) {
-                renderer.setDrawColor(255, 0, 0, 150);
+                renderer.renderTexture("tile_selection_enemy", pixelX, pixelY,
+                                     tileMap->getTileSize(), tileMap->getTileSize());
             } else {
-                renderer.setDrawColor(255, 165, 0, 100);
+                renderer.renderTexture("tile_selection_enemy", pixelX, pixelY,
+                                     tileMap->getTileSize(), tileMap->getTileSize());
             }
-
-            renderer.fillRect(pixelX, pixelY, tileMap->getTileSize(), tileMap->getTileSize());
         }
     }
 
@@ -454,9 +476,7 @@ void Game::renderMovementRange(Renderer& renderer) {
         int pixelX, pixelY;
         tileMap->gridToPixel(tile.first, tile.second, pixelX, pixelY);
 
-        renderer.setDrawColor(0, 255, 0, 100);
-        SDL_Rect tileRect = {pixelX, pixelY, tileMap->getTileSize(), tileMap->getTileSize()};
-        renderer.fillRect(tileRect);
+        renderer.renderTexture("tile_selection", pixelX, pixelY, tileMap->getTileSize(), tileMap->getTileSize());
     }
 }
 

@@ -46,18 +46,15 @@ void Enemy::update() {
 }
 
 void Enemy::render(Renderer& renderer) {
+    Entity::render(renderer);
+
     if (isTargeted) {
-        renderer.setDrawColor(255, 0, 0, 255);
-        SDL_Rect targetRect = {
-            static_cast<int>(x) - 2,
-            static_cast<int>(y) - 2,
-            width + 4,
-            height + 4
-        };
-        renderer.drawRect(targetRect);
+        renderer.renderTexture("tile_selection_enemy",
+                              static_cast<int>(x) - 2,
+                              static_cast<int>(y) - 2,
+                              width + 4, height + 4);
     }
 
-    Entity::render(renderer);
 
     std::string healthText = "HP " + std::to_string(health);
     renderer.drawText(healthText, static_cast<int>(x), static_cast<int>(y - 20));

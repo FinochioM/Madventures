@@ -9,7 +9,7 @@
 Player::Player(float x, float y)
     : Entity(std::floor(x / 32) * 32, std::floor(y / 32) * 32, 32, 32), health(100), speed(5), isMoving(false), direction(0),
                             targetX(x), targetY(y), hasTarget(false), selected(false), currentPathIndex(0), movementRange(5),
-                            attackDamage(10), attackRange(1), maxAttacks(5), remainingAttacks(5) {
+                            attackDamage(10), attackRange(5), maxAttacks(5), remainingAttacks(5) {
     textureID = "player";
 }
 
@@ -58,18 +58,16 @@ void Player::update() {
 }
 
 void Player::render(Renderer& renderer) {
+    Entity::render(renderer);
+
     if (selected) {
-        renderer.setDrawColor(0, 255, 0, 255);
-        SDL_Rect selectionRect = {
+        renderer.renderTexture(
+            "player_selection",
             static_cast<int>(x) - 2,
             static_cast<int>(y) - 2,
-            width + 4,
-            height + 4
-        };
-        renderer.drawRect(selectionRect);
+            width + 4, height + 4
+        );
     }
-
-    Entity::render(renderer);
 
     std::string healthText = "HP " + std::to_string(health);
     renderer.drawText(healthText, static_cast<int>(x), static_cast<int>(y - 20));
