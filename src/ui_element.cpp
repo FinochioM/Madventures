@@ -40,8 +40,8 @@ SDL_Rect UIElement::getBounds() const {
 }
 
 bool UIElement::containsPoint(int pointX, int pointY) const {
-    return (pointX >= bounds.x && pointX <= bounds.x + bounds.w &&
-            pointY >= bounds.y && pointY <= bounds.y + bounds.h);
+    return (pointX >= x && pointX <= x + width &&
+            pointY >= y && pointY <= y + height);
 }
 
 void UIElement::calculateActualPosition(int screenWidth, int screenHeight) {

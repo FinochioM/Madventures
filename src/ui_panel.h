@@ -16,6 +16,10 @@ public:
 
     void setTextureID(const std::string& textureID);
     void addElement(UIElement* element);
+    void getAbsolutePosition(int relativeX, int relativeY, int& absoluteX, int& absoluteY) const {
+        absoluteX = bounds.x + relativeX;
+        absoluteY = bounds.y + relativeY;
+    }
 
 private:
     std::string textureID;

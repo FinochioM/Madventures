@@ -153,20 +153,30 @@ bool Game::loadAssets(Renderer& renderer) {
         std::cout << "Warning: UI Menu Background sprite not found. Using placeholder." << std::endl;
     }
 
+    if (!renderer.loadTexture("btn_arena", "assets/arena_button_normal.png")){
+        std::cout << "Warning: UI Menu Background sprite not found. Using placeholder." << std::endl;
+    }
+
+    if (!renderer.loadTexture("btn_arena_hover", "assets/arena_button_normal.png")){
+        std::cout << "Warning: UI Menu Background sprite not found. Using placeholder." << std::endl;
+    }
+
     initializeUI();
 
     return true;
 }
 
 void Game::initializeUI() {
-    menuPanel = new UIPanel(0, 10, 992, 98, "ui_menu_background", UIAnchor::BOTTOM_CENTER);
+    menuPanel = new UIPanel(0, 10, 992, 136, "ui_menu_background", UIAnchor::BOTTOM_CENTER);
 
-    arenaButton = new UIButton(50, 30, 120, 40, "Go to Arena");
+    arenaButton = new UIButton(50, 30, 120, 40, "");
+    arenaButton->setTextureID("btn_arena");
+    arenaButton->setHoverTextureID("btn_arena_hover");
     arenaButton->setOnClick([this]() {
         switchToArena();
     });
 
-    upgradesButton = new UIButton(200, 30, 120, 40, "Upgrades");
+    upgradesButton = new UIButton(200, 30, 110, 36, "Upgrades");
     upgradesButton->setOnClick([this]() {
         std::cout << "Upgrades menu clicked" << std::endl;
     });
@@ -184,7 +194,7 @@ void Game::initializeUI() {
         switchToCity();
     });
 
-    UIPanel* arenaMenuPanel = new UIPanel(0, 10, 992, 98, "ui_menu_background", UIAnchor::BOTTOM_CENTER);
+    UIPanel* arenaMenuPanel = new UIPanel(0, 10, 992, 136, "ui_menu_background", UIAnchor::BOTTOM_CENTER);
     arenaMenuPanel->addElement(cityButton);
 
     UILabel* waveLabel = new UILabel(200, 30, "Wave: 1/5");
@@ -271,13 +281,6 @@ void Game::handleCityEvents(SDL_Event& e) {
 void Game::handleArenaEvents(SDL_Event& e) {
     if (e.type == SDL_MOUSEBUTTONDOWN) {
         if (e.button.button == SDL_BUTTON_LEFT) {
-            if ((!player->hasAttacksRemaining() || !inCombat) &&
-                mouseX >= cityButton.x && mouseX <= cityButton.x + cityButton.w &&
-                mouseY >= cityButton.y && mouseY <= cityButton.y + cityButton.h) {
-                switchToCity();
-                return;
-            }
-
             int gridX, gridY;
             tileMap->pixelToGrid(mouseX, mouseY, gridX, gridY);
 
@@ -440,14 +443,6 @@ void Game::renderArena(Renderer& renderer) {
                                      tileMap->getTileSize(), tileMap->getTileSize());
             }
         }
-    }
-
-    if (!player->hasAttacksRemaining() || !inCombat) {
-        renderer.setDrawColor(200, 100, 100, 255);
-        renderer.fillRect(cityButton);
-
-        renderer.setDrawColor(255, 255, 255, 255);
-        renderer.drawText("Return to City", cityButton.x + 10, cityButton.y + 10);
     }
 
     if (inCombat) {

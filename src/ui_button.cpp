@@ -26,6 +26,7 @@ void UIButton::render(Renderer& renderer) {
 
     if (!currentTexture.empty()) {
         renderer.renderTexture(currentTexture, bounds.x, bounds.y, bounds.w, bounds.h);
+
     } else {
         if (pressed) {
             renderer.setDrawColor(180, 180, 180, 255);
@@ -40,7 +41,7 @@ void UIButton::render(Renderer& renderer) {
         renderer.drawRect(bounds);
     }
 
-    if (!text.empty()) {
+    if (!text.empty() && currentTexture.empty()) {
         int textX = bounds.x + (bounds.w / 2) - (text.length() * 8 / 2);
         int textY = bounds.y + (bounds.h / 2) - 8;
         renderer.drawText(text, textX, textY);
