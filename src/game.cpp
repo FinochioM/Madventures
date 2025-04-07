@@ -7,9 +7,9 @@ Game::Game() : currentState(GameState::CITY), isRunning(true), mouseX(0), mouseY
                score(0), movesRemaining(10), playerSelected(false),
                window(nullptr), glContext(nullptr), imguiInitialized(false),
                inCombat(false) {
-    arenaButton = {50, 50, 120, 40};
-    cityButton = {50, 100, 120, 40};
-    //editorButton = {460, 400, 100, 50};
+
+    uiManagerCity = new UIManager(1024, 768);
+    uiManagerArena = new UIManager(1024, 768);
 
     tileMap = new TileMap(32, 1024, 768);
     mapEditor = new MapEditor(tileMap);
@@ -24,6 +24,9 @@ Game::~Game() {
     delete tileMap;
     delete mapEditor;
     delete combatManager;
+
+    delete uiManagerCity;
+    delete uiManagerArena;
 
     for (auto entity : entities) {
         delete entity;
@@ -146,7 +149,48 @@ bool Game::loadAssets(Renderer& renderer) {
         std::cout << "Warning: Tile Wall sprite not found. Using placeholder." << std::endl;
     }
 
+    if (!renderer.loadTexture("ui_menu_background", "assets/ui_menu_background.png")){
+        std::cout << "Warning: UI Menu Background sprite not found. Using placeholder." << std::endl;
+    }
+
+    initializeUI();
+
     return true;
+}
+
+void Game::initializeUI() {
+    menuPanel = new UIPanel(0, 10, 992, 98, "ui_menu_background", UIAnchor::BOTTOM_CENTER);
+
+    arenaButton = new UIButton(50, 30, 120, 40, "Go to Arena");
+    arenaButton->setOnClick([this]() {
+        switchToArena();
+    });
+
+    upgradesButton = new UIButton(200, 30, 120, 40, "Upgrades");
+    upgradesButton->setOnClick([this]() {
+        std::cout << "Upgrades menu clicked" << std::endl;
+    });
+
+    statsLabel = new UILabel(350, 30, "Score: 0");
+
+    menuPanel->addElement(arenaButton);
+    menuPanel->addElement(upgradesButton);
+    menuPanel->addElement(statsLabel);
+
+    uiManagerCity->addElement(menuPanel);
+
+    cityButton = new UIButton(50, 30, 120, 40, "Return to City");
+    cityButton->setOnClick([this]() {
+        switchToCity();
+    });
+
+    UIPanel* arenaMenuPanel = new UIPanel(0, 10, 992, 98, "ui_menu_background", UIAnchor::BOTTOM_CENTER);
+    arenaMenuPanel->addElement(cityButton);
+
+    UILabel* waveLabel = new UILabel(200, 30, "Wave: 1/5");
+    arenaMenuPanel->addElement(waveLabel);
+
+    uiManagerArena->addElement(arenaMenuPanel);
 }
 
 void Game::handleEvent(SDL_Event& e) {
@@ -162,28 +206,36 @@ void Game::handleEvent(SDL_Event& e) {
         }
     }
 
+    bool uiHandled = false;
     switch (currentState) {
         case GameState::CITY:
-            handleCityEvents(e);
+            uiHandled = uiManagerCity->handleEvent(e);
             break;
         case GameState::ARENA:
-            handleArenaEvents(e);
+            uiHandled = uiManagerArena->handleEvent(e);
             break;
-        case GameState::EDITOR:
-            handleEditorEvents(e);
+        default:
             break;
+    }
+
+    if (!uiHandled) {
+        switch (currentState) {
+            case GameState::CITY:
+                handleCityEvents(e);
+                break;
+            case GameState::ARENA:
+                handleArenaEvents(e);
+                break;
+            case GameState::EDITOR:
+                handleEditorEvents(e);
+                break;
+        }
     }
 }
 
 void Game::handleCityEvents(SDL_Event& e) {
     if (e.type == SDL_MOUSEBUTTONDOWN) {
         if (e.button.button == SDL_BUTTON_LEFT) {
-            if (mouseX >= arenaButton.x && mouseX <= arenaButton.x + arenaButton.w &&
-                mouseY >= arenaButton.y && mouseY <= arenaButton.y + arenaButton.h) {
-                switchToArena();
-                return;
-            }
-
             if (player->isPointOnPlayer(mouseX, mouseY)) {
                 player->setSelected(true);
                 playerSelected = true;
@@ -335,12 +387,12 @@ void Game::render(Renderer& renderer) {
     switch (currentState) {
         case GameState::CITY:
             tileMap->render(renderer);
-            renderCity(renderer);
             renderMovementRange(renderer);
             for (auto entity : entities) {
                 entity->render(renderer);
             }
             player->render(renderer);
+            uiManagerCity->render(renderer);
             break;
         case GameState::ARENA:
             tileMap->render(renderer);
@@ -350,6 +402,7 @@ void Game::render(Renderer& renderer) {
                 entity->render(renderer);
             }
             player->render(renderer);
+            uiManagerArena->render(renderer);
             break;
         case GameState::EDITOR:
             renderEditor(renderer);
@@ -358,11 +411,6 @@ void Game::render(Renderer& renderer) {
 }
 
 void Game::renderCity(Renderer& renderer) {
-    renderer.setDrawColor(100, 100, 200, 255);
-    renderer.fillRect(arenaButton);
-
-    renderer.setDrawColor(255, 255, 255, 255);
-    renderer.drawText("Go to Arena", arenaButton.x + 10, arenaButton.y + 10);
 }
 
 void Game::renderArena(Renderer& renderer) {

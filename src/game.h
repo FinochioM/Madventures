@@ -11,6 +11,10 @@
 #include "map_editor.h"
 #include "enemy.h"
 #include "combat_manager.h"
+#include "ui_manager.h"
+#include "ui_button.h"
+#include "ui_panel.h"
+#include "ui_label.h"
 
 #include "imgui/imgui.h"
 #include "imgui/backends/imgui_impl_sdl2.h"
@@ -54,10 +58,6 @@ private:
     int score;
     int movesRemaining;
 
-    SDL_Rect arenaButton;
-    SDL_Rect cityButton;
-    SDL_Rect editorButton;
-
     Player* player;
     std::vector<Entity*> entities;
 
@@ -67,6 +67,14 @@ private:
     SDL_Window* window;
     SDL_GLContext glContext;
     bool imguiInitialized;
+
+    UIManager* uiManagerCity;
+    UIManager* uiManagerArena;
+    UIPanel* menuPanel;
+    UIButton* arenaButton;
+    UIButton* cityButton;
+    UIButton* upgradesButton;
+    UILabel* statsLabel;
 
     void handleCityEvents(SDL_Event& e);
     void handleArenaEvents(SDL_Event& e);
@@ -90,6 +98,8 @@ private:
 
     bool initializeImGui();
     void shutdownImGui();
+
+    void initializeUI();
 
     CombatManager* combatManager;
     bool inCombat;
