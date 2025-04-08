@@ -872,15 +872,11 @@ std::string UIEditor::getLayoutPath(const std::string& layoutName) {
 void UIEditor::updateElementInfos() {
     elementInfos.clear();
 
-    // This is a placeholder - in a real implementation we would need a way to
-    // iterate through all UI elements in the UIManager and give them unique IDs
-
-    // For example, we might have code like:
-    /*
     const std::vector<UIElement*>& elements = currentUIManager->getElements();
-    int counter = 0;
+
     for (UIElement* element : elements) {
         std::string type;
+
         if (dynamic_cast<UIButton*>(element)) {
             type = "Button";
         }
@@ -894,19 +890,14 @@ void UIEditor::updateElementInfos() {
             type = "Element";
         }
 
-        std::string id = type + "_" + std::to_string(counter++);
-        elementInfos.push_back({id, type, element});
-    }
-    */
+        std::string id = element->getId();
+        if (id.empty()) {
+            static int counter = 0;
+            id = type + "_" + std::to_string(counter++);
+            element->setId(id);
+        }
 
-    if (currentManager == UIManagerType::CITY) {
-        elementInfos.push_back({"MenuPanel", "Panel", menuPanel});
-        elementInfos.push_back({"ArenaButton", "Button", arenaButton});
-        elementInfos.push_back({"UpgradesButton", "Button", upgradesButton});
-        elementInfos.push_back({"StatsLabel", "Label", statsLabel});
-    }
-    else {
-        elementInfos.push_back({"BackToCityButton", "Button", cityButton});
+        elementInfos.push_back(UIElementInfo(id, type, element));
     }
 }
 
