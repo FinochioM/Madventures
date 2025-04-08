@@ -15,6 +15,7 @@
 #include "ui_button.h"
 #include "ui_panel.h"
 #include "ui_label.h"
+#include "ui_editor.h"
 
 #include "imgui/imgui.h"
 #include "imgui/backends/imgui_impl_sdl2.h"
@@ -103,6 +104,9 @@ private:
 
     CombatManager* combatManager;
     bool inCombat;
+
+    UIEditor* uiEditor;
+    void toggleUIEditor();
 };
 
 #endif // GAME_H

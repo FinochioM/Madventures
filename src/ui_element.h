@@ -43,6 +43,10 @@ public:
 
     void calculateActualPosition(int screenWidth, int screenHeight);
 
+    void setId(const std::string& id) { this->id = id; }
+    const std::string& getId() const { return id; }
+    UIAnchor getAnchor() const { return anchor; }
+
 protected:
     int x, y;                   // Position relative to anchor
     int width, height;          // Element dimensions
@@ -52,6 +56,8 @@ protected:
     SDL_Rect bounds;            // Actual screen position and size
 
     void updateBounds();
+
+    std::string id; 
 };
 
 #endif // UI_ELEMENT_H

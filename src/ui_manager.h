@@ -18,6 +18,9 @@ public:
     void clear();
 
     void setScreenSize(int width, int height);
+    const std::vector<UIElement*>& getElements() const { return elements; }
+
+    UIElement* findElementById(const std::string& id);
 
 private:
     int screenWidth, screenHeight;

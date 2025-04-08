@@ -14,6 +14,8 @@ Game::Game() : currentState(GameState::CITY), isRunning(true), mouseX(0), mouseY
     tileMap = new TileMap(32, 1024, 768);
     mapEditor = new MapEditor(tileMap);
 
+    uiEditor = new UIEditor(uiManagerCity, uiManagerArena);
+
     player = new Player(100, 100);
 
     combatManager = new CombatManager(player, tileMap);
@@ -24,6 +26,7 @@ Game::~Game() {
     delete tileMap;
     delete mapEditor;
     delete combatManager;
+    delete uiEditor;
 
     delete uiManagerCity;
     delete uiManagerArena;
@@ -167,55 +170,91 @@ bool Game::loadAssets(Renderer& renderer) {
 }
 
 void Game::initializeUI() {
-    menuPanel = new UIPanel(0, 10, 992, 136, "ui_menu_background", UIAnchor::BOTTOM_CENTER);
+    std::filesystem::create_directories("layouts");
 
-    int screenWidth = 1024;
-    int screenHeight = 768;
+    bool cityLayoutLoaded = false;
+    bool arenaLayoutLoaded = false;
 
-    int panelX = (screenWidth - 992) / 2;
-    int panelY = screenHeight - 136 - 10;
+    if (std::filesystem::exists("layouts/city_ui.json")) {
+        cityLayoutLoaded = uiEditor->loadLayout("layouts/city_ui.json");
+    }
 
-    arenaButton = new UIButton(panelX + 50, panelY + 30, 110, 36, "");
-    arenaButton->setTextureID("btn_arena");
-    arenaButton->setHoverTextureID("btn_arena_hover");
-    arenaButton->setOnClick([this]() {
-        switchToArena();
-    });
+    if (std::filesystem::exists("layouts/arena_ui.json")) {
+        arenaLayoutLoaded = uiEditor->loadLayout("layouts/arena_ui.json");
+    }
 
-    upgradesButton = new UIButton(panelX + 250, panelY + 30, 150, 64, "");
-    upgradesButton->setTextureID("btn_arena");
-    upgradesButton->setHoverTextureID("btn_arena_hover");
-    upgradesButton->setOnClick([this]() {
-        std::cout << "Upgrades menu clicked" << std::endl;
-    });
+    if (!cityLayoutLoaded) {
+        menuPanel = new UIPanel(0, 10, 992, 136, "ui_menu_background", UIAnchor::BOTTOM_CENTER);
+        menuPanel->setId("MenuPanel");
 
-    statsLabel = new UILabel(panelX + 450, panelY + 30, "Score: 0");
+        int screenWidth = 1024;
+        int screenHeight = 768;
 
-    uiManagerCity->addElement(menuPanel);
-    uiManagerCity->addElement(arenaButton);
-    uiManagerCity->addElement(upgradesButton);
-    uiManagerCity->addElement(statsLabel);
+        int panelX = (screenWidth - 992) / 2;
+        int panelY = screenHeight - 136 - 10;
 
-    UIPanel* arenaMenuPanel = new UIPanel(0, 10, 992, 136, "ui_menu_background", UIAnchor::BOTTOM_CENTER);
+        arenaButton = new UIButton(panelX + 50, panelY + 30, 110, 36, "");
+        arenaButton->setId("ArenaButton");
+        arenaButton->setTextureID("btn_arena");
+        arenaButton->setHoverTextureID("btn_arena_hover");
+        arenaButton->setOnClick([this]() {
+            switchToArena();
+        });
 
+        upgradesButton = new UIButton(panelX + 250, panelY + 30, 150, 64, "");
+        upgradesButton->setId("UpgradesButton");
+        upgradesButton->setTextureID("btn_arena");
+        upgradesButton->setHoverTextureID("btn_arena_hover");
+        upgradesButton->setOnClick([this]() {
+            std::cout << "Upgrades menu clicked" << std::endl;
+        });
 
-    cityButton = new UIButton(panelX + 50, panelY + 30, 150, 64, "");
-    cityButton->setTextureID("btn_arena");
-    cityButton->setHoverTextureID("btn_arena_hover");
-    cityButton->setOnClick([this]() {
-        switchToCity();
-    });
+        statsLabel = new UILabel(panelX + 450, panelY + 30, "Score: 0");
+        statsLabel->setId("StatsLabel");
 
-    UILabel* waveLabel = new UILabel(panelX + 250, panelY + 30, "Wave: 1/5");
+        uiManagerCity->addElement(menuPanel);
+        uiManagerCity->addElement(arenaButton);
+        uiManagerCity->addElement(upgradesButton);
+        uiManagerCity->addElement(statsLabel);
 
-    uiManagerArena->addElement(arenaMenuPanel);
-    uiManagerArena->addElement(cityButton);
-    uiManagerArena->addElement(waveLabel);
+        uiEditor->saveLayout("layouts/city_ui.json");
+    }
+
+    if (!arenaLayoutLoaded) {
+        UIPanel* arenaMenuPanel = new UIPanel(0, 10, 992, 136, "ui_menu_background", UIAnchor::BOTTOM_CENTER);
+        arenaMenuPanel->setId("ArenaMenuPanel");
+
+        int screenWidth = 1024;
+        int screenHeight = 768;
+        int panelX = (screenWidth - 992) / 2;
+        int panelY = screenHeight - 136 - 10;
+
+        cityButton = new UIButton(panelX + 50, panelY + 30, 150, 64, "");
+        cityButton->setId("CityButton");
+        cityButton->setTextureID("btn_arena");
+        cityButton->setHoverTextureID("btn_arena_hover");
+        cityButton->setOnClick([this]() {
+            switchToCity();
+        });
+
+        UILabel* waveLabel = new UILabel(panelX + 250, panelY + 30, "Wave: 1/5");
+        waveLabel->setId("WaveLabel");
+
+        uiManagerArena->addElement(arenaMenuPanel);
+        uiManagerArena->addElement(cityButton);
+        uiManagerArena->addElement(waveLabel);
+
+        uiEditor->saveLayout("layouts/arena_ui.json");
+    }
 }
 
 void Game::handleEvent(SDL_Event& e) {
     if (e.type == SDL_MOUSEMOTION) {
         SDL_GetMouseState(&mouseX, &mouseY);
+    }
+
+    if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_u) {
+        toggleUIEditor();
     }
 
     if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_m) {
@@ -224,6 +263,11 @@ void Game::handleEvent(SDL_Event& e) {
         } else {
             switchToEditor();
         }
+    }
+
+    if (uiEditor->isActive()) {
+        uiEditor->handleEvent(e);
+        return;
     }
 
     bool uiHandled = false;
@@ -354,6 +398,10 @@ void Game::update() {
         entity->update();
     }
 
+    if (uiEditor->isActive()) {
+        uiEditor->update();
+    }
+
     switch (currentState) {
         case GameState::CITY:
             updateCity();
@@ -420,6 +468,10 @@ void Game::render(Renderer& renderer) {
         case GameState::EDITOR:
             renderEditor(renderer);
             break;
+    }
+
+    if (uiEditor->isActive()) {
+        uiEditor->render(renderer);
     }
 }
 
@@ -563,5 +615,14 @@ void Game::shutdownImGui() {
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
         imguiInitialized = false;
+    }
+}
+
+void Game::toggleUIEditor() {
+    uiEditor->toggleActive();
+
+    if (uiEditor->isActive()) {
+        std::string layoutName = (currentState == GameState::CITY) ? "city_ui" : "arena_ui";
+        uiEditor->loadLayout("layouts/" + layoutName + ".json");
     }
 }

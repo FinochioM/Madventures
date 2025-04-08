@@ -2,7 +2,7 @@
 
 UIElement::UIElement(int x, int y, int width, int height, UIAnchor anchor)
     : x(x), y(y), width(width), height(height), anchor(anchor),
-      visible(true), active(true) {
+      visible(true), active(true), id("") {
     updateBounds();
 }
 

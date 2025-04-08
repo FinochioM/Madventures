@@ -52,3 +52,11 @@ void UIManager::setScreenSize(int width, int height) {
         element->calculateActualPosition(screenWidth, screenHeight);
     }
 }
+
+UIElement* UIManager::findElementById(const std::string& id) {
+    // This is a simple implementation - in a real scenario we'd need
+    // to store element IDs somewhere or make UIElement have an ID property
+
+    // For now, just return nullptr as a placeholder
+    return nullptr;
+}
