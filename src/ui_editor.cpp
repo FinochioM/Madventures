@@ -774,6 +774,8 @@ bool UIEditor::loadLayout(const std::string& filename) {
             }
         }
 
+        updateElementInfos();
+
         for (const auto& elementJson : layoutJson["elements"]) {
             std::string id = elementJson["id"];
 

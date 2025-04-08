@@ -169,11 +169,64 @@ bool Game::loadAssets(Renderer& renderer) {
     return true;
 }
 
+// In Game::initializeUI() method, modify the beginning:
+
 void Game::initializeUI() {
     std::filesystem::create_directories("layouts");
 
     bool cityLayoutLoaded = false;
     bool arenaLayoutLoaded = false;
+
+    menuPanel = new UIPanel(0, 10, 992, 136, "ui_menu_background", UIAnchor::BOTTOM_CENTER);
+    menuPanel->setId("MenuPanel");
+
+    int screenWidth = 1024;
+    int screenHeight = 768;
+
+    int panelX = (screenWidth - 992) / 2;
+    int panelY = screenHeight - 136 - 10;
+
+    arenaButton = new UIButton(panelX + 50, panelY + 30, 110, 36, "");
+    arenaButton->setId("ArenaButton");
+    arenaButton->setTextureID("btn_arena");
+    arenaButton->setHoverTextureID("btn_arena_hover");
+    arenaButton->setOnClick([this]() {
+        switchToArena();
+    });
+
+    upgradesButton = new UIButton(panelX + 250, panelY + 30, 150, 64, "");
+    upgradesButton->setId("UpgradesButton");
+    upgradesButton->setTextureID("btn_arena");
+    upgradesButton->setHoverTextureID("btn_arena_hover");
+    upgradesButton->setOnClick([this]() {
+        std::cout << "Upgrades menu clicked" << std::endl;
+    });
+
+    statsLabel = new UILabel(panelX + 450, panelY + 30, "Score: 0");
+    statsLabel->setId("StatsLabel");
+
+    uiManagerCity->addElement(menuPanel);
+    uiManagerCity->addElement(arenaButton);
+    uiManagerCity->addElement(upgradesButton);
+    uiManagerCity->addElement(statsLabel);
+
+    UIPanel* arenaMenuPanel = new UIPanel(0, 10, 992, 136, "ui_menu_background", UIAnchor::BOTTOM_CENTER);
+    arenaMenuPanel->setId("ArenaMenuPanel");
+
+    cityButton = new UIButton(panelX + 50, panelY + 30, 150, 64, "");
+    cityButton->setId("CityButton");
+    cityButton->setTextureID("btn_arena");
+    cityButton->setHoverTextureID("btn_arena_hover");
+    cityButton->setOnClick([this]() {
+        switchToCity();
+    });
+
+    UILabel* waveLabel = new UILabel(panelX + 250, panelY + 30, "Wave: 1/5");
+    waveLabel->setId("WaveLabel");
+
+    uiManagerArena->addElement(arenaMenuPanel);
+    uiManagerArena->addElement(cityButton);
+    uiManagerArena->addElement(waveLabel);
 
     if (std::filesystem::exists("layouts/city_ui.json")) {
         cityLayoutLoaded = uiEditor->loadLayout("layouts/city_ui.json");
@@ -184,66 +237,10 @@ void Game::initializeUI() {
     }
 
     if (!cityLayoutLoaded) {
-        menuPanel = new UIPanel(0, 10, 992, 136, "ui_menu_background", UIAnchor::BOTTOM_CENTER);
-        menuPanel->setId("MenuPanel");
-
-        int screenWidth = 1024;
-        int screenHeight = 768;
-
-        int panelX = (screenWidth - 992) / 2;
-        int panelY = screenHeight - 136 - 10;
-
-        arenaButton = new UIButton(panelX + 50, panelY + 30, 110, 36, "");
-        arenaButton->setId("ArenaButton");
-        arenaButton->setTextureID("btn_arena");
-        arenaButton->setHoverTextureID("btn_arena_hover");
-        arenaButton->setOnClick([this]() {
-            switchToArena();
-        });
-
-        upgradesButton = new UIButton(panelX + 250, panelY + 30, 150, 64, "");
-        upgradesButton->setId("UpgradesButton");
-        upgradesButton->setTextureID("btn_arena");
-        upgradesButton->setHoverTextureID("btn_arena_hover");
-        upgradesButton->setOnClick([this]() {
-            std::cout << "Upgrades menu clicked" << std::endl;
-        });
-
-        statsLabel = new UILabel(panelX + 450, panelY + 30, "Score: 0");
-        statsLabel->setId("StatsLabel");
-
-        uiManagerCity->addElement(menuPanel);
-        uiManagerCity->addElement(arenaButton);
-        uiManagerCity->addElement(upgradesButton);
-        uiManagerCity->addElement(statsLabel);
-
         uiEditor->saveLayout("layouts/city_ui.json");
     }
 
     if (!arenaLayoutLoaded) {
-        UIPanel* arenaMenuPanel = new UIPanel(0, 10, 992, 136, "ui_menu_background", UIAnchor::BOTTOM_CENTER);
-        arenaMenuPanel->setId("ArenaMenuPanel");
-
-        int screenWidth = 1024;
-        int screenHeight = 768;
-        int panelX = (screenWidth - 992) / 2;
-        int panelY = screenHeight - 136 - 10;
-
-        cityButton = new UIButton(panelX + 50, panelY + 30, 150, 64, "");
-        cityButton->setId("CityButton");
-        cityButton->setTextureID("btn_arena");
-        cityButton->setHoverTextureID("btn_arena_hover");
-        cityButton->setOnClick([this]() {
-            switchToCity();
-        });
-
-        UILabel* waveLabel = new UILabel(panelX + 250, panelY + 30, "Wave: 1/5");
-        waveLabel->setId("WaveLabel");
-
-        uiManagerArena->addElement(arenaMenuPanel);
-        uiManagerArena->addElement(cityButton);
-        uiManagerArena->addElement(waveLabel);
-
         uiEditor->saveLayout("layouts/arena_ui.json");
     }
 }
