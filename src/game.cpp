@@ -169,38 +169,48 @@ bool Game::loadAssets(Renderer& renderer) {
 void Game::initializeUI() {
     menuPanel = new UIPanel(0, 10, 992, 136, "ui_menu_background", UIAnchor::BOTTOM_CENTER);
 
-    arenaButton = new UIButton(50, 30, 120, 40, "");
+    int screenWidth = 1024;
+    int screenHeight = 768;
+
+    int panelX = (screenWidth - 992) / 2;
+    int panelY = screenHeight - 136 - 10;
+
+    arenaButton = new UIButton(panelX + 50, panelY + 30, 110, 36, "");
     arenaButton->setTextureID("btn_arena");
     arenaButton->setHoverTextureID("btn_arena_hover");
     arenaButton->setOnClick([this]() {
         switchToArena();
     });
 
-    upgradesButton = new UIButton(200, 30, 110, 36, "Upgrades");
+    upgradesButton = new UIButton(panelX + 250, panelY + 30, 150, 64, "");
+    upgradesButton->setTextureID("btn_arena");
+    upgradesButton->setHoverTextureID("btn_arena_hover");
     upgradesButton->setOnClick([this]() {
         std::cout << "Upgrades menu clicked" << std::endl;
     });
 
-    statsLabel = new UILabel(350, 30, "Score: 0");
-
-    menuPanel->addElement(arenaButton);
-    menuPanel->addElement(upgradesButton);
-    menuPanel->addElement(statsLabel);
+    statsLabel = new UILabel(panelX + 450, panelY + 30, "Score: 0");
 
     uiManagerCity->addElement(menuPanel);
+    uiManagerCity->addElement(arenaButton);
+    uiManagerCity->addElement(upgradesButton);
+    uiManagerCity->addElement(statsLabel);
 
-    cityButton = new UIButton(50, 30, 120, 40, "Return to City");
+    UIPanel* arenaMenuPanel = new UIPanel(0, 10, 992, 136, "ui_menu_background", UIAnchor::BOTTOM_CENTER);
+
+
+    cityButton = new UIButton(panelX + 50, panelY + 30, 150, 64, "");
+    cityButton->setTextureID("btn_arena");
+    cityButton->setHoverTextureID("btn_arena_hover");
     cityButton->setOnClick([this]() {
         switchToCity();
     });
 
-    UIPanel* arenaMenuPanel = new UIPanel(0, 10, 992, 136, "ui_menu_background", UIAnchor::BOTTOM_CENTER);
-    arenaMenuPanel->addElement(cityButton);
-
-    UILabel* waveLabel = new UILabel(200, 30, "Wave: 1/5");
-    arenaMenuPanel->addElement(waveLabel);
+    UILabel* waveLabel = new UILabel(panelX + 250, panelY + 30, "Wave: 1/5");
 
     uiManagerArena->addElement(arenaMenuPanel);
+    uiManagerArena->addElement(cityButton);
+    uiManagerArena->addElement(waveLabel);
 }
 
 void Game::handleEvent(SDL_Event& e) {

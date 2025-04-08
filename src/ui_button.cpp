@@ -53,7 +53,9 @@ bool UIButton::handleEvent(SDL_Event& e) {
 
     if (e.type == SDL_MOUSEMOTION) {
         int mouseX, mouseY;
-        SDL_GetMouseState(&mouseX, &mouseY);
+
+        mouseX = e.motion.x;
+        mouseY = e.motion.y;
 
         bool wasHovered = hovered;
         hovered = containsPoint(mouseX, mouseY);
@@ -62,7 +64,9 @@ bool UIButton::handleEvent(SDL_Event& e) {
     } else if (e.type == SDL_MOUSEBUTTONDOWN) {
         if (e.button.button == SDL_BUTTON_LEFT) {
             int mouseX, mouseY;
-            SDL_GetMouseState(&mouseX, &mouseY);
+
+            mouseX = e.button.x;
+            mouseY = e.button.y;
 
             if (containsPoint(mouseX, mouseY)) {
                 pressed = true;
@@ -74,7 +78,8 @@ bool UIButton::handleEvent(SDL_Event& e) {
             pressed = false;
 
             int mouseX, mouseY;
-            SDL_GetMouseState(&mouseX, &mouseY);
+            mouseX = e.button.x;
+            mouseY = e.button.y;
 
             if (containsPoint(mouseX, mouseY) && onClick) {
                 onClick();

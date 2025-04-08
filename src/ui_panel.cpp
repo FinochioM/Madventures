@@ -22,56 +22,24 @@ void UIPanel::render(Renderer& renderer) {
     }
 
     for (auto element : elements) {
-        int childX = bounds.x + element->getX();
-        int childY = bounds.y + element->getY();
-
-        int originalX = element->getX();
-        int originalY = element->getY();
-
-        element->setPosition(childX, childY);
         element->render(renderer);
-
-        element->setPosition(originalX, originalY);
     }
 }
-
 
 bool UIPanel::handleEvent(SDL_Event& e) {
     if (!active) return false;
 
-    int mouseX = 0, mouseY = 0;
-    if (e.type == SDL_MOUSEMOTION || e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP) {
-        SDL_GetMouseState(&mouseX, &mouseY);
-
-        if (!containsPoint(mouseX, mouseY)) {
-            return false;
-        }
-    }
-
-    SDL_Event relativeEvent = e;
-
-    if (e.type == SDL_MOUSEMOTION) {
-        relativeEvent.motion.x = mouseX - bounds.x;
-        relativeEvent.motion.y = mouseY - bounds.y;
-    } else if (e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP) {
-        relativeEvent.button.x = mouseX - bounds.x;
-        relativeEvent.button.y = mouseY - bounds.y;
-    }
-
-    for (auto element : elements) {
-        int originalX = element->getX();
-        int originalY = element->getY();
-        SDL_Rect originalBounds = element->getBounds();
-
-        element->setPosition(originalX, originalY);
-
-        bool handled = element->handleEvent(relativeEvent);
-
-        element->setPosition(originalX, originalY);
-
-        if (handled) {
+    for (auto it = elements.rbegin(); it != elements.rend(); ++it) {
+        if ((*it)->handleEvent(e)) {
             return true;
         }
+    }
+
+    if (e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP) {
+        int mouseX, mouseY;
+        SDL_GetMouseState(&mouseX, &mouseY);
+
+        return containsPoint(mouseX, mouseY);
     }
 
     return false;
